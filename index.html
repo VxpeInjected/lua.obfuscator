@@ -1,0 +1,435 @@
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowRight, GitBranch, Mail, Phone, Code, LayoutGrid,
+  Fx, Tool, User, Search, X, Loader2
+} from "lucide-react";
+
+// Single-file React portfolio component
+// TailwindCSS required in the project to render properly.
+// Uses Tailwind utility classes and framer-motion for animations.
+// Drop this file into your React app and import as a page or component.
+
+const THEME = {
+  primary: "#220808", // very dark red / black base
+  accent: "#d11b1b", // vivid red
+  accent2: "#8b0f0f", // deep red
+  glass: "rgba(255,255,255,0.04)",
+};
+
+const skillList = [
+  { id: "python", name: "Python", tag: "Backend / Automation", icon: Code },
+  { id: "roblox", name: "Roblox Lua", tag: "Game Systems", icon: Tool },
+  { id: "htmlcss", name: "HTML & CSS", tag: "Frontend", icon: LayoutGrid },
+  { id: "js", name: "JavaScript", tag: "Frontend / Node", icon: Fx },
+  { id: "discord", name: "Discord Bots", tag: "Bots / Moderation", icon: GitBranch },
+  { id: "uiux", name: "UI / UX", tag: "Design", icon: User },
+  { id: "pm", name: "Project Mgmt", tag: "Leadership", icon: Loader2 },
+  { id: "moderation", name: "Moderation", tag: "Community Ops", icon: Phone },
+];
+
+const projectsSeed = [
+  {
+    id: "elevator",
+    title: "Advanced Elevator System (Roblox)",
+    tech: ["Roblox Lua", "Networking", "Client-side SFX"],
+    desc:
+      "A fully-featured elevator system with intelligent floor prioritization, sliding doors, remote controls, and per-player teleport music.",
+    highlight: "slot-based occupancy, animation-driven doors, timed teleport safety.",
+    img: null,
+    tag: "Game Systems",
+  },
+  {
+    id: "discordbot",
+    title: "Mod & Onboarding Bot (Discord)",
+    tech: ["Python", "discord.py", "Postgres"],
+    desc:
+      "Custom onboarding with modal verification, button puzzles, strike system, snipe logging, and advanced moderation tools.",
+    highlight: "Role gating, ephemeral interactions, advanced automations.",
+    img: null,
+    tag: "Bots",
+  },
+  {
+    id: "portfolio-site",
+    title: "This Portfolio (React + Tailwind)",
+    tech: ["React", "Tailwind", "Framer-Motion"],
+    desc: "A visually-rich, responsive portfolio site with filterable projects, animated timeline, and a design system.",
+    highlight: "Dark red-black-red theme, accessible components.",
+    img: null,
+    tag: "Websites",
+  },
+  {
+    id: "inventory",
+    title: "Custom Inventory & Hotbar (Roblox)",
+    tech: ["Roblox Lua", "UI/UX"],
+    desc:
+      "Drag/drop inventory, custom hotbar integration, tool management that syncs with server-owned tool instances.",
+    highlight: "Client-server separation, optimised replication.",
+    img: null,
+    tag: "Game Systems",
+  },
+];
+
+export default function Portfolio() {
+  const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState("all");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [darkRedMode] = useState(true);
+
+  const tags = useMemo(() => {
+    const s = new Set(projectsSeed.map((p) => p.tag));
+    return ["all", ...Array.from(s)];
+  }, []);
+
+  const filtered = useMemo(() => {
+    return projectsSeed.filter((p) => {
+      const q = query.trim().toLowerCase();
+      const matchesQuery = q === "" || p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q);
+      const matchesTag = activeTag === "all" || p.tag === activeTag;
+      return matchesQuery && matchesTag;
+    });
+  }, [query, activeTag]);
+
+  return (
+    <div
+      className="min-h-screen text-gray-100 antialiased"
+      style={{
+        background:
+          "radial-gradient(1200px 600px at 10% 10%, rgba(209,27,27,0.06), transparent), linear-gradient(180deg,#0b0202 0%, #120202 50%, #180303 100%)",
+        color: "#f9f7f7",
+      }}
+    >
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
+        <Header />
+
+        <main className="mt-10 grid gap-10 grid-cols-1 lg:grid-cols-12">
+          <section className="lg:col-span-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.03)] shadow-2xl rounded-2xl p-6 backdrop-blur-sm">
+            <Hero setQuery={setQuery} />
+
+            <div className="mt-6">
+              <h3 className="text-sm uppercase text-zinc-300 tracking-widest">Skills</h3>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {skillList.map((s) => (
+                  <SkillPill key={s.id} skill={s} />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-sm uppercase text-zinc-300 tracking-widest">Contact</h3>
+              <ContactCard />
+            </div>
+
+            <div className="mt-6 opacity-90">
+              <h3 className="text-sm uppercase text-zinc-300 tracking-widest">Services</h3>
+              <ul className="mt-3 space-y-2 text-sm text-zinc-200">
+                <li>Full-stack development (Python / JS)</li>
+                <li>Roblox systems & game-engine scripting</li>
+                <li>Discord bots & moderation tooling</li>
+                <li>UI/UX product design & handoff</li>
+                <li>Project management & community moderation</li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="lg:col-span-8">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 bg-[rgba(255,255,255,0.02)] rounded-xl p-3 flex items-center gap-3 border border-[rgba(255,255,255,0.03)]">
+                <Search size={18} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search projects, tech, descriptions..."
+                  className="bg-transparent outline-none placeholder:text-zinc-400 flex-1 text-sm"
+                />
+                <button
+                  onClick={() => setQuery("")}
+                  className="text-xs py-1 px-2 rounded bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.03)]"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="ml-3 flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  {tags.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setActiveTag(t)}
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        activeTag === t
+                          ? "bg-gradient-to-r from-[#8b0f0f] to-[#d11b1b] shadow-lg"
+                          : "bg-[rgba(255,255,255,0.02)]"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filtered.map((p) => (
+                <ProjectCard key={p.id} project={p} onOpen={() => setSelectedProject(p)} />
+              ))}
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold">Selected Case Studies</h3>
+              <Timeline />
+            </div>
+          </section>
+        </main>
+
+        <Footer />
+
+        <AnimatePresence>
+          {selectedProject && (
+            <ProjectModal project={selectedProject} onClose={() => setSelectedProject(null)} />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <header className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#8b0f0f] to-[#d11b1b] shadow-lg">
+          <div className="text-white font-bold">Vx</div>
+        </div>
+        <div>
+          <div className="text-sm text-zinc-300">VxpeInjected</div>
+          <div className="text-xs text-zinc-400">Professional Programmer • UI/UX Designer • PM</div>
+        </div>
+      </div>
+
+      <nav className="flex items-center gap-4">
+        <a className="text-sm text-zinc-300 hover:text-white">Projects</a>
+        <a className="text-sm text-zinc-300 hover:text-white">Case Studies</a>
+        <a className="text-sm text-zinc-300 hover:text-white">Contact</a>
+        <a
+          href="#contact"
+          className="ml-2 inline-flex items-center gap-2 bg-gradient-to-r from-[#8b0f0f] to-[#d11b1b] px-4 py-2 rounded-2xl shadow-lg text-sm"
+        >
+          Hire me <ArrowRight size={16} />
+        </a>
+      </nav>
+    </header>
+  );
+}
+
+function Hero({ setQuery }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+          I build reliable systems, beautiful interfaces,
+          <span className="ml-2 bg-clip-text text-transparent bg-gradient-to-r from-[#ffb3b3] to-[#ffd1d1]">
+            and products people love.
+          </span>
+        </h1>
+        <p className="mt-2 text-sm text-zinc-300">Python • Roblox Lua • JavaScript • HTML/CSS • Discord Bots • UI/UX</p>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <button
+          onClick={() => setQuery("Roblox")}
+          className="px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.03)] text-sm"
+        >
+          Show Roblox systems
+        </button>
+        <button
+          onClick={() => setQuery("Discord")}
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#8b0f0f] to-[#d11b1b] text-sm shadow"
+        >
+          Show Bots & Tools
+        </button>
+        <a
+          href="#contact"
+          className="px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.02)] text-sm flex items-center gap-2"
+        >
+          Contact
+        </a>
+      </div>
+
+      <div className="mt-4 p-3 rounded-xl border border-[rgba(255,255,255,0.02)] bg-[rgba(255,255,255,0.01)]">
+        <div className="text-xs text-zinc-300">Availability</div>
+        <div className="mt-1 flex items-center gap-3">
+          <div className="text-sm">🔴 Open for full-time & contract</div>
+          <div className="ml-auto text-xs text-zinc-400">Response time: usually same day</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkillPill({ skill }) {
+  const Icon = skill.icon;
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-[linear-gradient(90deg,rgba(0,0,0,0.2),rgba(255,255,255,0.01))] border border-[rgba(255,255,255,0.02)]">
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#8b0f0f] to-[#d11b1b]">
+        <Icon size={16} />
+      </div>
+      <div>
+        <div className="text-sm font-semibold">{skill.name}</div>
+        <div className="text-xs text-zinc-400">{skill.tag}</div>
+      </div>
+    </div>
+  );
+}
+
+function ContactCard() {
+  return (
+    <div className="mt-3 p-3 rounded-lg bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.02)]">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 text-sm">
+          <div className="font-medium">VxpeInjected</div>
+          <div className="text-xs text-zinc-400">Professional programmer & designer</div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <a href="mailto:you@example.com" className="text-xs flex items-center gap-2 opacity-90">
+            <Mail size={14} /> Email
+          </a>
+          <a href="#contact" className="text-xs flex items-center gap-2 opacity-90">
+            <Phone size={14} /> Contact
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectCard({ project, onOpen }) {
+  return (
+    <motion.article
+      whileHover={{ translateY: -6 }}
+      className="rounded-2xl p-4 shadow-lg border border-[rgba(255,255,255,0.02)] bg-[rgba(255,255,255,0.02)]"
+    >
+      <div className="flex items-start gap-4">
+        <div className="w-20 h-20 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#8b0f0f] to-[#d11b1b] text-white font-bold">
+          {project.title.split(" ")[0].slice(0,2).toUpperCase()}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold">{project.title}</h4>
+            <div className="text-xs text-zinc-400">{project.tech.join(" • ")}</div>
+          </div>
+          <p className="mt-2 text-sm text-zinc-300">{project.desc}</p>
+
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-xs bg-[rgba(255,255,255,0.03)] px-2 py-1 rounded">{project.tag}</span>
+            <button onClick={onOpen} className="ml-auto text-sm inline-flex items-center gap-2">
+              View case <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+function ProjectModal({ project, onClose }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-6"
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}></div>
+      <motion.div
+        initial={{ y: 40 }}
+        animate={{ y: 0 }}
+        exit={{ y: 40 }}
+        className="relative max-w-3xl w-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.03)] p-6 rounded-2xl shadow-2xl"
+      >
+        <button onClick={onClose} className="absolute top-4 right-4">
+          <X />
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="col-span-2">
+            <h3 className="text-xl font-bold">{project.title}</h3>
+            <p className="mt-3 text-sm text-zinc-300">{project.desc}</p>
+
+            <div className="mt-4">
+              <h4 className="text-sm uppercase text-zinc-400">Highlights</h4>
+              <p className="mt-2 text-sm">{project.highlight}</p>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="text-sm uppercase text-zinc-400">Tech stack</h4>
+              <div className="mt-2 flex gap-2 flex-wrap">
+                {project.tech.map((t) => (
+                  <span key={t} className="text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.02)]">{t}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <a className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#8b0f0f] to-[#d11b1b] inline-flex items-center gap-2">Open repo</a>
+              <a className="px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.02)] inline-flex items-center gap-2">Live demo</a>
+            </div>
+          </div>
+
+          <aside className="p-4 rounded-xl bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.02)]">
+            <h5 className="text-sm text-zinc-300">Project metadata</h5>
+            <ul className="mt-3 text-sm text-zinc-400 space-y-2">
+              <li>Duration: 6–12 weeks (typical)</li>
+              <li>Role: Lead dev, designer</li>
+              <li>Team: 1–4 engineers, PM</li>
+              <li>Impact: Reduced load times & improved UX</li>
+            </ul>
+          </aside>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Timeline() {
+  const entries = [
+    { year: "2025", title: "Lead PM — Major Roblox Title", body: "Led content pipeline, optimised replication, shipped new elevator & movement systems." },
+    { year: "2024", title: "Built large moderation bot", body: "Enabled onboarding flow, built strike & snipe features, scaled to 200k users." },
+    { year: "2023", title: "Freelance UI/UX & Frontend", body: "Designed and shipped multiple production websites and dashboards." },
+  ];
+
+  return (
+    <div className="mt-4 space-y-6">
+      {entries.map((e, i) => (
+        <motion.div
+          key={e.year}
+          initial={{ opacity: 0, x: -10 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="p-4 rounded-xl border border-[rgba(255,255,255,0.02)] bg-[rgba(255,255,255,0.01)]"
+        >
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-zinc-400 w-20">{e.year}</div>
+            <div>
+              <div className="font-semibold">{e.title}</div>
+              <div className="text-sm text-zinc-300">{e.body}</div>
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-12 text-sm text-zinc-400 flex items-center justify-between">
+      <div>© {new Date().getFullYear()} VxpeInjected — Built for performance & polish.</div>
+      <div className="flex items-center gap-4">
+        <a className="hover:text-white">GitHub</a>
+        <a className="hover:text-white">LinkedIn</a>
+        <a className="hover:text-white">Twitter</a>
+      </div>
+    </footer>
+  );
+}
