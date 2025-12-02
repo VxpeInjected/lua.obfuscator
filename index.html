@@ -73,17 +73,20 @@ function obfuscate(code){
     if(!map[c]) map[c] = chars[Math.floor(Math.random()*chars.length)];
     result += map[c];
   }
-  return '--MAP:' + btoa(JSON.stringify(map)) + '\n' + result;
+  return '--MAP:' + btoa(JSON.stringify(map)) + '
+' + result;
 }
 
 function deobfuscate(code){
-  const lines = code.split('\n');
+  const lines = code.split('
+');
   if(!lines[0].startsWith('--MAP:')) return 'Missing MAP header';
   let map = JSON.parse(atob(lines[0].slice(6)));
   let reverse = {};
   for(let k in map) reverse[map[k]] = k;
   let out = '';
-  const body = lines.slice(1).join('\n');
+  const body = lines.slice(1).join('
+');
   for(let c of body) out += reverse[c] || c;
   return out;
 }
