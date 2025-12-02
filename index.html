@@ -4,15 +4,18 @@
 <meta charset="UTF-8" />
 <title>Lua Obfuscator / Deobfuscator</title>
 <style>
-    body { font-family: Arial, sans-serif; background:#1a1a1a; color:white; margin:0; padding:0; }
-    header { background:#ff7a00; padding:15px; text-align:center; font-size:24px; font-weight:bold; }
-    .tabs { display:flex; background:#ff8f26; }
-    .tab { flex:1; padding:12px; text-align:center; cursor:pointer; background:#ff8f26; font-weight:bold; }
-    .tab.active { background:#ff7a00; }
-    .page { display:none; padding:20px; }
-    textarea { width:100%; height:260px; background:#111; color:#ffa64d; border:2px solid #ff7a00; padding:10px; resize:none; }
-    button { background:#ff7a00; border:none; padding:12px 20px; font-size:16px; cursor:pointer; margin-top:12px; color:white; font-weight:bold; }
-    .loader { width:0; height:6px; background:#ff7a00; margin-top:10px; transition:0.3s; }
+    body { font-family: Arial, sans-serif; background:#0d0d0d; color:white; margin:0; padding:0; }
+    header { background:#ff7a00; padding:18px; text-align:center; font-size:26px; font-weight:bold; box-shadow:0 0 20px #ff7a00; }
+    .tabs { display:flex; background:#ff8f26; box-shadow:0 0 10px #ff7a00; }
+    .tab { flex:1; padding:14px; text-align:center; cursor:pointer; background:#ff8f26; font-weight:bold; border-radius:8px 8px 0 0; transition:0.2s; }
+    .tab:hover { filter:brightness(1.15); }
+    .tab.active { background:#ff7a00; box-shadow:0 0 15px #ff7a00 inset; }
+    .page { display:none; padding:20px; animation:fade 0.25s ease; }
+    @keyframes fade { from{opacity:0;} to{opacity:1;} }
+    textarea { width:100%; height:260px; background:#111; color:#ffa64d; border:2px solid #ff7a00; padding:10px; resize:none; border-radius:10px; box-shadow:0 0 12px #ff7a00; }
+    button { background:#ff7a00; border:none; padding:14px 22px; font-size:16px; cursor:pointer; margin-top:12px; color:white; font-weight:bold; border-radius:10px; transition:0.2s; box-shadow:0 0 15px #ff7a00; }
+    button:hover { transform:scale(1.03); filter:brightness(1.2); }
+    .loader { width:0; height:6px; background:#ff7a00; margin-top:10px; transition:0.4s; border-radius:5px; }
 </style>
 </head>
 <body>
@@ -33,7 +36,7 @@
     <textarea id="inputDeobf" placeholder="Paste obfuscated Lua..."></textarea>
     <button onclick="runDeobfuscate()">Deobfuscate</button>
     <div id="load2" class="loader"></div>
-    <textarea id="outputDeobf" placeholder="Output..."></textarea>
+    <textarea id="outputDeobf" placeholder="Output...	extarea>
 </div>
 
 <script>
@@ -49,21 +52,21 @@ function base64Decode(str){ return decodeURIComponent(escape(atob(str))); }
 
 function runObfuscate(){
     const bar=document.getElementById('load1'); bar.style.width='100%';
-    setTimeout(()=>{ bar.style.width='0'; },400);
+    setTimeout(()=>{ bar.style.width='0'; },500);
 
     let code=document.getElementById('inputObf').value;
     if(!code.trim()){ document.getElementById('outputObf').value=''; return; }
 
     let b64=base64Encode(code);
 
-    let oneLine=`loadstring((function(b)local bit=bit32 local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b=t[i+1]local c=t[i+2]local d=t[i+3]o[k]=string.char(bit.band(bit.bor(bit.lshift(a,2), bit.rshift(b or 0,4)),255))k=k+1 if c then o[k]=string.char(bit.band(bit.bor(bit.lshift(b,4), bit.rshift(c,2)),255))k=k+1 end if d then o[k]=string.char(bit.band(bit.bor(bit.lshift(c,6), d),255))k=k+1 end end return table.concat(o)end)('((function(b)local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b=t[i+1]local c=t[i+2]local d=t[i+3]o[k]=string.char(((a<<2)|(b>>4))&255)k=k+1 if c then o[k]=string.char(((b<<4)|(c>>2))&255)k=k+1 end if d then o[k]=string.char(((c<<6)|d)&255)k=k+1 end end return table.concat(o)end)('${b64}'))()`;
+    let oneLine="loadstring((function(b)local bit=bit32 local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b2=t[i+1]local c2=t[i+2]local d2=t[i+3]o[k]=string.char(bit.band(bit.bor(bit.lshift(a,2), bit.rshift(b2 or 0,4)),255))k=k+1 if c2 then o[k]=string.char(bit.band(bit.bor(bit.lshift(b2,4), bit.rshift(c2,2)),255))k=k+1 end if d2 then o[k]=string.char(bit.band(bit.bor(bit.lshift(c2,6), d2),255))k=k+1 end end return table.concat(o) end)(" + "'" + b64 + "'))()";
 
     document.getElementById('outputObf').value = oneLine;
 }
 
 function runDeobfuscate(){
     const bar=document.getElementById('load2'); bar.style.width='100%';
-    setTimeout(()=>{ bar.style.width='0'; },400);
+    setTimeout(()=>{ bar.style.width='0'; },500);
 
     let code=document.getElementById('inputDeobf').value;
     let match = code.match(/'([^']+)'/);
