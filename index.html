@@ -1,118 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lua Obfuscator</title>
-  <style>
-    body { background:#0f0f0f; color:#fff; font-family:Arial; margin:0; padding:0; }
-    .tabs { display:flex; background:#1a1a1a; }
-    .tab { padding:15px 25px; cursor:pointer; border-right:1px solid #333; }
-    .tab.active { background:#333; }
+<meta charset="UTF-8" />
+<title>Lua Obfuscator / Deobfuscator</title>
+<style>
+    body { font-family: Arial, sans-serif; background:#1a1a1a; color:white; margin:0; padding:0; }
+    header { background:#ff7a00; padding:15px; text-align:center; font-size:24px; font-weight:bold; }
+    .tabs { display:flex; background:#ff8f26; }
+    .tab { flex:1; padding:12px; text-align:center; cursor:pointer; background:#ff8f26; font-weight:bold; }
+    .tab.active { background:#ff7a00; }
     .page { display:none; padding:20px; }
-    .page.active { display:block; }
-    textarea { width:100%; height:300px; background:#111; color:#0f0; border:1px solid #333; padding:10px; font-family:monospace; }
-    button { padding:10px 15px; background:#0f0; border:none; cursor:pointer; font-weight:bold; color:#000; margin-top:10px; }
-    #loader { width:0%; height:8px; background:#0f0; margin-top:10px; transition:width .3s; }
-  </style>
+    textarea { width:100%; height:260px; background:#111; color:#ffa64d; border:2px solid #ff7a00; padding:10px; resize:none; }
+    button { background:#ff7a00; border:none; padding:12px 20px; font-size:16px; cursor:pointer; margin-top:12px; color:white; font-weight:bold; }
+    .loader { width:0; height:6px; background:#ff7a00; margin-top:10px; transition:0.3s; }
+</style>
 </head>
 <body>
-  <div class="tabs">
-    <div class="tab active" data-page="obf">Obfuscate</div>
-    <div class="tab" data-page="deobf">Deobfuscate</div>
-  </div>
+<header>Lua Obfuscator / Deobfuscator</header>
+<div class="tabs">
+    <div class="tab active" onclick="showPage('obf')">Obfuscate</div>
+    <div class="tab" onclick="showPage('deobf')">Deobfuscate</div>
+</div>
 
-  <div id="loader"></div>
+<div id="obf" class="page" style="display:block;">
+    <textarea id="inputObf" placeholder="Paste Lua code..."></textarea>
+    <button onclick="runObfuscate()">Obfuscate</button>
+    <div id="load1" class="loader"></div>
+    <textarea id="outputObf" placeholder="Output..."></textarea>
+</div>
 
-  <div id="obf" class="page active">
-    <h2>Lua Obfuscator</h2>
-    <textarea id="inputObf" placeholder="Paste Lua code here..."></textarea>
-    <button id="btnObf">Obfuscate</button>
-    <textarea id="outputObf" placeholder="Obfuscated output..." readonly></textarea>
-  </div>
-
-  <div id="deobf" class="page">
-    <h2>Lua Deobfuscator</h2>
-    <textarea id="inputDeobf" placeholder="Paste obfuscated code..."></textarea>
-    <button id="btnDeobf">Deobfuscate</button>
-    <textarea id="outputDeobf" placeholder="Deobfuscated output..." readonly></textarea>
-  </div>
+<div id="deobf" class="page">
+    <textarea id="inputDeobf" placeholder="Paste obfuscated Lua..."></textarea>
+    <button onclick="runDeobfuscate()">Deobfuscate</button>
+    <div id="load2" class="loader"></div>
+    <textarea id="outputDeobf" placeholder="Output..."></textarea>
+</div>
 
 <script>
-// Page switching
-const tabs = document.querySelectorAll('.tab');
-const pages = document.querySelectorAll('.page');
-
-tabs.forEach(t => {
-  t.onclick = () => {
-    tabs.forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    pages.forEach(p => p.classList.remove('active'));
-    document.getElementById(t.dataset.page).classList.add('active');
-  };
-});
-
-// Loader bar function
-function runLoader(callback){
-  const bar = document.getElementById('loader');
-  bar.style.width = '0%';
-  let w = 0;
-  const interval = setInterval(()=>{
-    w += 10;
-    bar.style.width = w + '%';
-    if(w >= 100){ clearInterval(interval); setTimeout(()=>{ bar.style.width = '0%' },300); callback(); }
-  }, 60);
+function showPage(id){
+    document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById(id).style.display='block';
+    event.target.classList.add('active');
 }
 
-// Simple reversible obfuscator
-function obfuscate(code) {
-        const b64 = btoa(unescape(encodeURIComponent(code)));
-        const loader = "loadstring((function(b)local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b=t[i+1]local c=t[i+2]local d=t[i+3]o[k]=string.char(((a<<2)| (b>>4))&255)k=k+1 if c then o[k]=string.char(((b<<4)| (c>>2))&255)k=k+1 end if d then o[k]=string.char(((c<<6)| d)&255)k=k+1 end end return table.concat(o)end)('" + b64 + "'))()";
-        return loader;
-    };
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for(let c of code){
-    if(!map[c]) map[c] = chars[Math.floor(Math.random()*chars.length)];
-    result += map[c];
-  }
-  return '--MAP:' + btoa(JSON.stringify(map)) + '
-' + result;
+function base64Encode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function base64Decode(str){ return decodeURIComponent(escape(atob(str))); }
+
+function runObfuscate(){
+    const bar=document.getElementById('load1'); bar.style.width='100%';
+    setTimeout(()=>{ bar.style.width='0'; },400);
+
+    let code=document.getElementById('inputObf').value;
+    if(!code.trim()){ document.getElementById('outputObf').value=''; return; }
+
+    let b64=base64Encode(code);
+
+    let oneLine=`loadstring((function(b)local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b=t[i+1]local c=t[i+2]local d=t[i+3]o[k]=string.char(((a<<2)|(b>>4))&255)k=k+1 if c then o[k]=string.char(((b<<4)|(c>>2))&255)k=k+1 end if d then o[k]=string.char(((c<<6)|d)&255)k=k+1 end end return table.concat(o)end)('${b64}'))()`;
+
+    document.getElementById('outputObf').value = oneLine;
 }
 
-function deobfuscate(obf) {
-        const match = obf.match(/\(['\"](.*?)['\"]\)/);
-        if (!match) return 'Could not locate encoded chunk.';
-        try {
-            const decoded = decodeURIComponent(escape(atob(match[1])));
-            return decoded;
-        } catch (e) {
-            return 'Failed to decode.';
-        }
-    };
-  for(let k in map) reverse[map[k]] = k;
-  let out = '';
-  const body = lines.slice(1).join('
-');
-  for(let c of body) out += reverse[c] || c;
-  return out;
+function runDeobfuscate(){
+    const bar=document.getElementById('load2'); bar.style.width='100%';
+    setTimeout(()=>{ bar.style.width='0'; },400);
+
+    let code=document.getElementById('inputDeobf').value;
+    let match = code.match(/'([^']+)'/);
+    if(!match){ document.getElementById('outputDeobf').value='Failed: No Base64 found.'; return; }
+
+    try{
+        let decoded = base64Decode(match[1]);
+        document.getElementById('outputDeobf').value = decoded;
+    }catch(e){ document.getElementById('outputDeobf').value='Decode failed.'; }
 }
-
-// Buttons
-
-document.getElementById('btnObf').onclick = () => {
-  runLoader(()=>{
-    const input = document.getElementById('inputObf').value;
-    document.getElementById('outputObf').value = obfuscate(input);
-  });
-};
-
-document.getElementById('btnDeobf').onclick = () => {
-  runLoader(()=>{
-    const input = document.getElementById('inputDeobf').value;
-    document.getElementById('outputDeobf').value = deobfuscate(input);
-  });
-};
 </script>
 </body>
 </html>
