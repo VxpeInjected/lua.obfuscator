@@ -65,8 +65,11 @@ function runLoader(callback){
 }
 
 // Simple reversible obfuscator
-function obfuscate(code){
-  const map = {};
+function obfuscate(code) {
+        const b64 = btoa(unescape(encodeURIComponent(code)));
+        const loader = "loadstring((function(b)local c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'local d={}for i=1,#c do d[c:sub(i,i)]=i-1 end local t={}local n=1 for i=1,#b do local v=d[b:sub(i,i)]if v then t[n]=v n=n+1 end end local o={}local k=1 for i=1,#t,4 do local a=t[i]local b=t[i+1]local c=t[i+2]local d=t[i+3]o[k]=string.char(((a<<2)| (b>>4))&255)k=k+1 if c then o[k]=string.char(((b<<4)| (c>>2))&255)k=k+1 end if d then o[k]=string.char(((c<<6)| d)&255)k=k+1 end end return table.concat(o)end)('" + b64 + "'))()";
+        return loader;
+    };
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for(let c of code){
@@ -77,12 +80,16 @@ function obfuscate(code){
 ' + result;
 }
 
-function deobfuscate(code){
-  const lines = code.split('
-');
-  if(!lines[0].startsWith('--MAP:')) return 'Missing MAP header';
-  let map = JSON.parse(atob(lines[0].slice(6)));
-  let reverse = {};
+function deobfuscate(obf) {
+        const match = obf.match(/\(['\"](.*?)['\"]\)/);
+        if (!match) return 'Could not locate encoded chunk.';
+        try {
+            const decoded = decodeURIComponent(escape(atob(match[1])));
+            return decoded;
+        } catch (e) {
+            return 'Failed to decode.';
+        }
+    };
   for(let k in map) reverse[map[k]] = k;
   let out = '';
   const body = lines.slice(1).join('
