@@ -183,7 +183,7 @@
 </head>
 <body>
 
-<div id="intro"><div id="intro-title">Lua Obfuscator | @vxpe_injected on Discord | v.2.04.3</div></div>
+<div id="intro"><div id="intro-title">Lua Obfuscator | v.2.04.3</div></div>
 
 <div id="mini-menu">
     <div id="mini-menu-title">Note!</div>
@@ -240,183 +240,368 @@
 </div>
 
 <script>
+/*
+ Safe, fixed version of your obfuscator logic.
+ - Fixes previous bugs: dangerous function inlining, overzealous whitespace removal, accidental renaming of Lua core identifiers.
+ - Adds unique identifier appended as requested.
+ - Still conservative so output runs correctly in Roblox (avoids breaking syntax).
+*/
+
 let protectionLevel = 'none';
 let antiReverseEngineering = 'none';
 let preserveFunctionality = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
-        document.querySelector('.container').style.display = 'flex';
-        document.getElementById('mini-menu').style.display = 'block';
+        const container = document.querySelector('.container');
+        if (container) container.style.display = 'flex';
+        const mini = document.getElementById('mini-menu');
+        if (mini) mini.style.display = 'block';
     }, 4000);
     updateButtonText();
 });
 
 function updateButtonText() {
-    document.getElementById('protectionLevelButton').innerHTML = `<i class="fas fa-user-secret"></i> ${capitalize(protectionLevel)} Protection`;
-    document.getElementById('antiReverseEngineeringButton').innerHTML = `<i class="fas fa-wrench"></i> ${capitalize(antiReverseEngineering)}`;
+    const pBtn = document.getElementById('protectionLevelButton');
+    const aBtn = document.getElementById('antiReverseEngineeringButton');
+    if (pBtn) pBtn.innerHTML = `<i class="fas fa-user-secret"></i> ${capitalize(protectionLevel)} Protection`;
+    if (aBtn) aBtn.innerHTML = `<i class="fas fa-wrench"></i> ${capitalize(antiReverseEngineering)}`;
 }
 
-function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
-
+function capitalize(str) { return (str && str.length) ? str.charAt(0).toUpperCase() + str.slice(1) : str; }
 function setProtectionLevel(level) { protectionLevel = level; updateButtonText(); }
 function setAntiReverseEngineering(level) { antiReverseEngineering = level; updateButtonText(); }
 
 function togglePreserveFunctionality() {
     preserveFunctionality = !preserveFunctionality;
     const btn = document.getElementById('preserveFunctionalityButton');
-    document.getElementById('preserveStatus').textContent = preserveFunctionality ? 'ON' : 'OFF';
-    btn.style.backgroundColor = preserveFunctionality ? '#2ecc71' : '#c0392b';
-    btn.innerHTML = `<i class="fas ${preserveFunctionality ? 'fa-check-circle' : 'fa-times-circle'}"></i> Preserve Functionality: <span id="preserveStatus">${preserveFunctionality ? 'ON' : 'OFF'}</span>`;
+    const status = document.getElementById('preserveStatus');
+    if (status) status.textContent = preserveFunctionality ? 'ON' : 'OFF';
+    if (btn) {
+        btn.style.backgroundColor = preserveFunctionality ? '#2ecc71' : '#c0392b';
+        btn.innerHTML = `<i class="fas ${preserveFunctionality ? 'fa-check-circle' : 'fa-times-circle'}"></i> Preserve Functionality: <span id="preserveStatus">${preserveFunctionality ? 'ON' : 'OFF'}</span>`;
+    }
 }
 
 function obfuscateCode() {
     const loading = document.getElementById('loadingIndicator');
     const output = document.getElementById('output');
-    output.classList.add('fade-out');
-    loading.style.display = 'inline-block';
+    if (output) output.classList.add('fade-out');
+    if (loading) loading.style.display = 'inline-block';
 
     setTimeout(() => {
-        let code = document.getElementById('inputCode').value;
-        code = applyObfuscation(code, protectionLevel, antiReverseEngineering);
-        output.textContent = addObfuscationMessage(code);
-        output.classList.remove('fade-out');
-        loading.style.display = 'none';
-    }, 300);
+        let code = (document.getElementById('inputCode') || {}).value || '';
+        let result = applyObfuscation(code, protectionLevel, antiReverseEngineering);
+        result = appendIdentifier(result); // Option B: append unique identifier block
+        if (output) {
+            // Use textContent so special characters are preserved
+            output.textContent = result;
+            output.classList.remove('fade-out');
+        }
+        if (loading) loading.style.display = 'none';
+    }, 250);
 }
 
 function clearFields() {
-    document.getElementById('inputCode').value = '';
-    document.getElementById('output').textContent = '';
+    const inEl = document.getElementById('inputCode');
+    const outEl = document.getElementById('output');
+    if (inEl) inEl.value = '';
+    if (outEl) outEl.textContent = '';
 }
 
+// ----------------------
+// Main obfuscation pipeline
+// ----------------------
 function applyObfuscation(code, level, antiReverse) {
-    let obf = code;
+    let obf = String(code || '');
+
+    // Safety: if empty, return immediately (but still add identifier later)
+    if (!obf.trim()) return obf;
+
+    // Always do these safe, non-destructive steps only when user actually selected something
     if (level !== 'none' || antiReverse !== 'none') {
-        obf = obfuscateLocalVariables(obf);
-        obf = removeComments(obf);
-        obf = safeRemoveWhitespace(obf);
-        obf = convertNumbersToHex(obf);
+        obf = removeBlockComments(obf);
+        obf = removeLineComments(obf);
+        obf = safeMinifyWhitespace(obf);
+        // convertNumbersToHex left out by default because some numeric expressions can break Luau in odd edge cases
     }
 
-    const levels = {
-        low: [stringManipulation, basicControlFlowObfuscation],
-        normal: [stringManipulation, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c,preserveFunctionality), aggressiveRenaming],
-        advanced: [stringManipulation, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c,preserveFunctionality), aggressiveRenaming, booleanObfuscation, numberObfuscation],
-        extreme: [stringManipulation, advancedControlFlowObfuscation, (c)=>deadCodeInsertion(c,preserveFunctionality), aggressiveRenaming, booleanObfuscation, numberObfuscation, dataObfuscation, functionInlining]
+    const pipelineByLevel = {
+        low: [stringToCharCalls, basicControlFlowObfuscation],
+        normal: [stringToCharCalls, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename],
+        advanced: [stringToCharCalls, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename, booleanObfuscation, simpleNumberObfuscation],
+        extreme: [stringToCharCalls, advancedControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename, booleanObfuscation, simpleNumberObfuscation, dataObfuscation, safeFunctionInlining]
     };
 
-    if(levels[level]) levels[level].forEach(fn => obf = fn(obf));
+    if (pipelineByLevel[level]) {
+        for (const fn of pipelineByLevel[level]) {
+            obf = fn(obf);
+        }
+    }
 
-    const anti = {
+    const antiPipeline = {
         basic: [basicControlFlowObfuscation],
-        complex: [advancedControlFlowObfuscation, dataObfuscation, functionInlining],
-        extreme: [advancedControlFlowObfuscation, dataObfuscation, functionInlining, (c)=>junkCodeInsertion(c,preserveFunctionality), aggressiveRenaming, booleanObfuscation, numberObfuscation]
+        complex: [advancedControlFlowObfuscation, dataObfuscation, safeFunctionInlining],
+        extreme: [advancedControlFlowObfuscation, dataObfuscation, safeFunctionInlining, (c)=>junkCodeInsertion(c,preserveFunctionality)]
     };
 
-    if(anti[antiReverse]) anti[antiReverse].forEach(fn => { if(typeof fn==='function') obf=fn(obf); });
+    if (antiPipeline[antiReverse]) {
+        for (const fn of antiPipeline[antiReverse]) obf = fn(obf);
+    }
 
     return obf;
 }
 
-// --- Techniques ---
-function obfuscateLocalVariables(code) {
-    const regex = /local\s+([a-zA-Z_]\w*)/g;
-    const replacements = {};
-    let obf = code;
-    let m;
-    while(m = regex.exec(code)){
-        const name = m[1];
-        if(!replacements[name]){
-            const newName = `_0x${Math.random().toString(16).slice(2,8)}${Math.random().toString(16).slice(2,8)}`;
-            replacements[name] = newName;
-            obf = obf.replace(new RegExp(`\\b${name}\\b`,'g'), newName);
+// ----------------------
+// Safe helpers & techniques
+// ----------------------
+
+// Remove long block comments -- naive but adequate for most cases
+function removeBlockComments(code) {
+    // Avoid removing block-like text inside strings: quick approach - split by strings and only strip comments outside strings
+    return mapOutsideStrings(code, (outside) => outside.replace(/--\[\[[\s\S]*?\]\]/g, ''));
+}
+
+function removeLineComments(code) {
+    // remove line comments that are not inside strings
+    return mapOutsideStrings(code, (outside) => outside.replace(/--[^\n\r]*/g, ''));
+}
+
+// Map a function only over text outside string literals. Preserves strings exactly.
+function mapOutsideStrings(code, fn) {
+    let out = '';
+    let i = 0;
+    const len = code.length;
+    while (i < len) {
+        const ch = code[i];
+        if (ch === '"' || ch === "'") {
+            // capture string
+            const quote = ch;
+            out += ch;
+            i++;
+            while (i < len) {
+                const cc = code[i];
+                out += cc;
+                i++;
+                if (cc === '\\') {
+                    // escape next char without checking
+                    if (i < len) { out += code[i]; i++; }
+                    continue;
+                }
+                if (cc === quote) break;
+            }
+        } else {
+            // capture outside chunk until next quote
+            let j = i;
+            while (j < len && code[j] !== '"' && code[j] !== "'") j++;
+            const chunk = code.slice(i, j);
+            out += fn(chunk);
+            i = j;
         }
     }
-    return obf;
+    return out;
 }
 
-function removeComments(code){ return code.replace(/--\[\[[\s\S]*?\]\]/g,'').replace(/--.*$/gm,''); }
-
-function safeRemoveWhitespace(code){
-    let inStr=false, newC="";
-    for(let i=0;i<code.length;i++){
-        const c=code[i];
-        if(c=='"'||c=="'"){
-            if(code[i-1]==='\\') newC+=c;
-            else { inStr=!inStr; newC+=c; }
-        } else if(!inStr && /\s/.test(c)) continue;
-        else newC+=c;
-    }
-    return newC;
-}
-
-function convertNumbersToHex(code){
-    return code.replace(/\b-?\d+(\.\d+)?\b/g, m=>{
-        const hex = parseFloat(m).toString(16);
-        return hex.startsWith('-') ? `-0x${hex.slice(1)}` : `0x${hex}`;
+// Minify safely: collapse multiple whitespace to single, remove spaces around punctuation but keep required spaces between identifiers/keywords
+function safeMinifyWhitespace(code) {
+    // operate outside strings
+    return mapOutsideStrings(code, (outside) => {
+        // collapse runs of whitespace into single space
+        let s = outside.replace(/\s+/g, ' ');
+        // remove space before and after certain punctuation where safe
+        s = s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g, '$1');
+        // ensure 'localfunction' won't appear: restore required space between keywords "local" and following identifier or "function"
+        s = s.replace(/\blocal([A-Za-z_])/g, 'local $1');
+        s = s.replace(/\bfunction([ (])/g, 'function $1');
+        s = s.replace(/\bend([^\w])/g, 'end$1'); // keep end
+        return s.trim();
     });
 }
 
-function stringManipulation(code){ 
-    return code.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g,(m,s)=>`string.char(${[...s].map(c=>c.charCodeAt(0)).join(',')})`);
+// Convert string literals to string.char(...) where appropriate (only for double/single quoted short strings)
+function stringToCharCalls(code) {
+    return mapOutsideStrings(code, (outside) => {
+        return outside.replace(/(["'])([^\1\\]{1,120}?)\1/g, (m, quote, inner) => {
+            // skip if contains unescaped quote or control characters or concatenation sequences
+            if (/[\\\r\n]/.test(inner)) return m;
+            // reasonable cutoff to keep very long strings untouched
+            if (inner.length === 0) return quote + quote;
+            // transform to string.char(...) but keep if contains non-ASCII? we'll still convert bytes
+            const codes = [...inner].map(ch => ch.charCodeAt(0)).join(',');
+            return `string.char(${codes})`;
+        });
+    });
 }
 
-function basicControlFlowObfuscation(code){ return code.replace(/;/g,";if true then end;"); }
-
-// --- Fixed Advanced Control Flow ---
-function advancedControlFlowObfuscation(code){
-    const a = generateObfuscatedName(), b = generateObfuscatedName();
-    return `do local ${a}=0; local ${b}=1; if ${a}<${b} then while ${a}<${b} do ${a}=${a}+1; ${b}=${b}+1; end end end\n` + code;
+// Basic control-flow junk that is syntactically safe
+function basicControlFlowObfuscation(code) {
+    // insert benign if true then end after line endings semicolons/newlines where safe
+    return mapOutsideStrings(code, (outside) => {
+        // Insert after semicolons and after some statements separated by newline
+        return outside.replace(/;/g, '; if true then end');
+    });
 }
 
-// --- Junk & Dead Code ---
-function deadCodeInsertion(code,preserve){ 
-    if(preserve) return code;
+// Advanced control-flow (wrap in a do..end block so it doesn't inject stray tokens)
+function advancedControlFlowObfuscation(code) {
+    const a = generateObfuscatedName();
+    const b = generateObfuscatedName();
+    const block = `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n`;
+    return block + code;
+}
+
+// Dead code insertion: only add top-level harmless functions/constants
+function deadCodeInsertion(code, preserve) {
+    if (preserve) return code;
     const f = generateObfuscatedName();
-    return `local function ${f}() local ${generateObfuscatedName()}=10; end\n` + code; 
+    const v = generateObfuscatedName();
+    const dead = `local function ${f}() local ${v} = ${Math.floor(Math.random()*999)}; return ${v}; end\n`;
+    return dead + code;
 }
 
-function junkCodeInsertion(code,preserve){
-    if(preserve) return code;
+// Junk insertion - single line placed at top
+function junkCodeInsertion(code, preserve) {
+    if (preserve) return code;
     const stmts = [
-        `local ${generateObfuscatedName()}=1+1-1`,
-        `if true then end`,
-        `local ${generateObfuscatedName()}=string.char(72,101,108,108,111)`,
-        `local ${generateObfuscatedName()}={${generateObfuscatedName()}=1}`
+        `local ${generateObfuscatedName()} = 1`,
+        `local ${generateObfuscatedName()} = string.char(72,101,108)`,
+        `if (1==1) then end`
     ];
-    return stmts[Math.floor(Math.random()*stmts.length)] + '\n' + code;
+    const pick = stmts[Math.floor(Math.random() * stmts.length)];
+    return pick + '\n' + code;
 }
 
-// --- Function Inlining Fix ---
-function functionInlining(code){
-    return code.replace(/local function ([a-zA-Z_]\w*)\(([^)]*)\)\s*([\s\S]*?)end/g,(m,n,p,b)=>{
-        // Only inline simple single-line returns
-        const body = b.trim();
-        if(body.startsWith('return ')){
-            const expr = body.slice(7).trim();
-            const callRegex = new RegExp(`\\b${n}\\s*\\(([^)]*)\\)`, 'g');
-            return code.replace(callRegex, `(${expr})`);
+// Safe local-variable rename: rename only variables declared with "local <name> =" or "local <name>," or "local <name>;"
+function safeLocalRename(code) {
+    // Will not rename globals or standard APIs like game, workspace, script, require, wait, etc.
+    const protectedNames = new Set([
+        // common Roblox/Lua globals and APIs
+        'game','workspace','script','instance','Instance','require','task','wait','print','warn','workspace','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof'
+    ]);
+    // find local declarations with pattern: local name [,name]* [= ...]
+    // capture outside strings
+    let replacements = Object.create(null);
+    const outside = mapOutsideStrings(code, s => s); // get whole code but strings preserved
+    const localDeclRegex = /\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g;
+    let m;
+    while ((m = localDeclRegex.exec(outside))) {
+        const name = m[1];
+        if (protectedNames.has(name)) continue;
+        if (!replacements[name]) {
+            replacements[name] = generateObfuscatedName();
         }
-        return m;
+    }
+    if (Object.keys(replacements).length === 0) return code;
+
+    // perform replacements outside strings only
+    return mapOutsideStrings(code, (chunk) => {
+        for (const orig in replacements) {
+            // use word-boundary replace
+            chunk = chunk.replace(new RegExp(`\\b${orig}\\b`, 'g'), replacements[orig]);
+        }
+        return chunk;
     });
 }
 
-// --- Aggressive Renaming Fix ---
-function aggressiveRenaming(code){
-    return code.replace(/\b([a-zA-Z_]\w*)\b/g,name=>isLuaKeyword(name)||isLuaStdLib(name)?name:generateObfuscatedName());
+// Safe function inlining - VERY conservative
+// Only handles functions declared exactly as: local function name() return <expr> end
+// with no parameters and a single return expression that contains only literals and arithmetic
+function safeFunctionInlining(code) {
+    // parse declarations
+    const declRegex = /local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
+    const decls = [];
+    let m;
+    while ((m = declRegex.exec(code))) {
+        const name = m[1];
+        const body = m[2].trim();
+        // check for single return like: return 1+2 or return "hi"
+        const singleReturn = body.match(/^\s*return\s+([\s\S]+?)\s*$/);
+        if (singleReturn) {
+            const expr = singleReturn[1].trim();
+            // basic safety: expression must not contain letters (no variables/functions) except true/false/nil
+            if (/[^0-9+\-*/().\s'"\[\],]/.test(expr) && !/true|false|nil/.test(expr)) {
+                // contains identifiers, skip
+                continue;
+            }
+            decls.push({ name, expr, fullMatch: m[0] });
+        }
+    }
+
+    if (decls.length === 0) return code;
+
+    // Replace calls like name() with (expr) - but only outside strings
+    let out = mapOutsideStrings(code, (chunk) => {
+        for (const d of decls) {
+            const callRegex = new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`, 'g');
+            chunk = chunk.replace(callRegex, `(${d.expr})`);
+        }
+        return chunk;
+    });
+
+    // Finally remove the original safe function declarations
+    for (const d of decls) {
+        out = out.replace(d.fullMatch, '');
+    }
+
+    return out;
 }
-function isLuaKeyword(n){ return ["and","break","do","else","elseif","end","false","for","function","if","in","local","nil","not","or","repeat","return","then","true","until","while"].includes(n); }
-function isLuaStdLib(n){ return ["string","table","math","io","os","debug","coroutine","package"].some(k=>n===k||n.startsWith(k+".")); }
 
-// --- Boolean & Number ---
-function booleanObfuscation(code){ return code.replace(/\btrue\b/g,"(1==1)").replace(/\bfalse\b/g,"(1==0)"); }
-function numberObfuscation(code){ return code.replace(/\b-?\d+(\.\d+)?\b/g,m=>["("+m+"+0)","("+m+"*1)","("+m+"-0)","("+m+"/1)","("+m+"^1)"][Math.floor(Math.random()*5)]); }
-function dataObfuscation(code){ const offset=Math.floor(Math.random()*100)+1; return code.replace(/\b-?\d+(\.\d+)?\b/g,m=>`(${m}+${offset}-${offset})`); }
+// Convert booleans to expressions
+function booleanObfuscation(code) {
+    return mapOutsideStrings(code, outside => {
+        return outside.replace(/\btrue\b/g, '(1==1)').replace(/\bfalse\b/g, '(1==0)');
+    });
+}
 
-// --- Utilities ---
-function addObfuscationMessage(code){ return "--[[ Obfuscated & Protected By VxpeInjected.Lua_Obfuscator v.2.04.3 ]]--\n"+code; }
-function generateObfuscatedName(){ return `_0x${Math.random().toString(16).slice(2,8)}${Math.random().toString(16).slice(2,8)}`; }
+// Simple numeric obfuscation (keeps numbers intact but wraps them in arithmetic that evaluates same)
+function simpleNumberObfuscation(code) {
+    return mapOutsideStrings(code, outside => {
+        return outside.replace(/\b(\d+(\.\d+)?)\b/g, (m, num) => {
+            // don't touch index-like numbers inside [] (best-effort) - simple approach: wrap randomly
+            if (Math.random() < 0.35) {
+                return `(${num} + 0)`;
+            }
+            return num;
+        });
+    });
+}
+
+function dataObfuscation(code) {
+    return mapOutsideStrings(code, outside => {
+        const offset = Math.floor(Math.random() * 50) + 1;
+        return outside.replace(/\b(\d+(\.\d+)?)\b/g, (m, num) => {
+            if (Math.random() < 0.25) return `(${num}+${offset}-${offset})`;
+            return num;
+        });
+    });
+}
+
+// ----------------------
+// Utilities
+// ----------------------
+
+// Append unique identifier block at end (Option B)
+function appendIdentifier(code) {
+    const id = generateIdentifier(64); // long unique string
+    // Ensure there's a trailing newline so comment doesn't accidentally attach to code token
+    return String(code || '') + '\n\n--[[ Identifier: ' + id + ' ]]';
+}
+
+// generate alpha-numeric identifier of given length
+function generateIdentifier(len = 48) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let out = '';
+    for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+}
+
+// generate obfuscated variable-like name (safe lua identifier)
+function generateObfuscatedName() {
+    // start with _vx then a random hex chunk
+    const a = Math.floor(Math.random() * 0xFFFFFF).toString(16);
+    const b = Math.floor(Math.random() * 0xFFFFFF).toString(16);
+    return `_vx${a}${b}`;
+}
 </script>
 </body>
 </html>
