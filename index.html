@@ -734,11 +734,14 @@ function randKey() {
 // The decoder is a self-contained Lua snippet that:
 //   1. Has the B91 alphabet and encoded payload hardcoded
 //   2. Decodes → XORs → load()s the result
+// ── Build the Lua decoder (itself minified to one line) ──
 function buildLuaLoader(encoded, key) {
   const k0=key[0], k1=key[1], k2=key[2];
   const alpha = B91_ALPHA.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
   // Lua source for the decoder (will itself be minified)
+  // FIXED: Replaced Lua 5.3 bitwise operators with Luau-compatible bit32 functions
+  // FIXED: Replaced load() with loadstring() for Roblox compatibility
   const loaderSrc = `
 local _a='${alpha}'
 local _d='${encoded}'
@@ -755,41 +758,41 @@ for _i=1,#_d do
       _v=_c
     else
       _v=_v+_c*91
-      _x=_x|(_v<<_b)
-      if(_v&8191)>88 then _b=_b+13 else _b=_b+14 end
+      _x=bit32.bor(_x,bit32.lshift(_v,_b))
+      if bit32.band(_v,8191)>88 then _b=_b+13 else _b=_b+14 end
       _v=math.floor(_v/8192)
       repeat
-        table.insert(_t,_x&255)
-        _x=_x>>8
+        table.insert(_t,bit32.band(_x,255))
+        _x=bit32.rshift(_x,8)
         _b=_b-8
       until _b<=7
       _v=-1
     end
   end
 end
-if _v>-1 then table.insert(_t,(_x|(_v<<_b))&255) end
+if _v>-1 then table.insert(_t,bit32.band(bit32.bor(_x,bit32.lshift(_v,_b)),255)) end
 local _s={}
 local _i=1
 while _i<=#_t do
   local _byte=_t[_i]
   local _ki=_k[((_i-1)%3)+1]
-  local _dec=_byte~_ki
+  local _dec=bit32.bxor(_byte,_ki)
   if _dec<128 then
     table.insert(_s,string.char(_dec))
     _i=_i+1
   elseif _dec<224 then
-    local _b2=_t[_i+1]~_k[((_i)%3)+1]
-    table.insert(_s,string.char(((_dec&31)<<6)|(_b2&63)))
+    local _b2=bit32.bxor(_t[_i+1],_k[((_i)%3)+1])
+    table.insert(_s,string.char(bit32.bor(bit32.lshift(bit32.band(_dec,31),6),bit32.band(_b2,63))))
     _i=_i+2
   else
-    local _b2=_t[_i+1]~_k[((_i)%3)+1]
-    local _b3=_t[_i+2]~_k[((_i+1)%3)+1]
-    table.insert(_s,string.char(((_dec&15)<<12)|((_b2&63)<<6)|(_b3&63)))
+    local _b2=bit32.bxor(_t[_i+1],_k[((_i)%3)+1])
+    local _b3=bit32.bxor(_t[_i+2],_k[((_i+1)%3)+1])
+    table.insert(_s,string.char(bit32.bor(bit32.lshift(bit32.band(_dec,15),12),bit32.lshift(bit32.band(_b2,63),6),bit32.band(_b3,63))))
     _i=_i+3
   end
 end
 local _src=table.concat(_s)
-local _f,_e=load(_src)
+local _f,_e=loadstring(_src)
 if _f then _f() else error(_e) end
 `;
 
