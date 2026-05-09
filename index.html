@@ -688,8 +688,8 @@ function minifyLua(src) {
   // Fix required spaces: keywords must have space before next word char
   src = processOutsideStrings(src, chunk =>
     chunk
-      .replace(/\b(local|function|if|then|else|elseif|end|do|while|repeat|until|for|in|return|break|not|and|or)([A-Za-z0-9_])/g, '$1 $2')
-      .replace(/([A-Za-z0-9_])(local|function|then|else|elseif|end|do|while|repeat|until|return|break)\b/g, '$1 $2')
+      .replace(/\b(local|function|if|then|else|elseif|end|do|while|repeat|until|for|in|return|break|not|and|or)\b(?=[A-Za-z0-9_])/g, '$1 ')
+      .replace(/([A-Za-z0-9_])\b(local|function|then|else|elseif|end|do|while|repeat|until|return|break|in)\b/g, '$1 $2')
   );
   return src.trim();
 }
@@ -830,13 +830,13 @@ function obfuscate(src) {
   const sig = keyHex + '|' + encoded;
 
   // 6. Return: loader on line 1, signature comment on line 2
-  return loader + '\n--[[LS:' + sig + ']]';
+  return loader + '\n--[=[LS:' + sig + ']=]';
 }
 
 // ── Main deobfuscate function ──
 function deobfuscate(src) {
   // 1. Find signature
-  const sigMatch = src.match(/--\[\[LS:([0-9a-f]{6})\|([^\]]+)\]\]/);
+  const sigMatch = src.match(/--\[=(?:\[)LS:([0-9a-f]{6})\|([^\]=]+)\]=\]/);
   if (!sigMatch) {
     throw new Error('No LuaShield signature found.\nThis tool only works on code obfuscated by LuaShield v3+.\nMake sure you paste the full output including the --[[LS:...]] line.');
   }
