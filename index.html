@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LuaShield</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2 L28 7 L28 17 C28 23.5 22.5 28.8 16 30 C9.5 28.8 4 23.5 4 17 L4 7 Z' fill='%2307080a' stroke='%235dffb4' stroke-width='1.5'/><path d='M11 16 L14.5 19.5 L21 13' stroke='%235dffb4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #07080a;
-    --surface:   #0e1015;
-    --surface2:  #13161c;
-    --border:    #1e2330;
-    --accent:    #5dffb4;
-    --accent2:   #00c97a;
-    --text:      #d4dce8;
-    --muted:     #4a5568;
-    --danger:    #ff4d6d;
+    --bg:       #07080a;
+    --surface:  #0e1015;
+    --surface2: #13161c;
+    --border:   #1e2330;
+    --accent:   #5dffb4;
+    --accent2:  #00c97a;
+    --text:     #d4dce8;
+    --muted:    #4a5568;
+    --orange:   #ffaa5d;
     --mono: 'Space Mono', monospace;
     --display: 'Syne', sans-serif;
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -33,541 +33,641 @@
     flex-direction: column;
     overflow-x: hidden;
   }
-
-  /* ── grid bg ── */
   body::before {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background-image:
-      linear-gradient(rgba(93,255,180,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(93,255,180,0.03) 1px, transparent 1px);
+      linear-gradient(rgba(93,255,180,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(93,255,180,0.025) 1px, transparent 1px);
     background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
+    pointer-events: none; z-index: 0;
   }
 
-  /* ── intro ── */
+  /* ── INTRO ── */
   #intro {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    animation: introOut 0.6s ease 2.6s forwards;
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 200;
+    animation: introOut 0.6s ease 2.8s forwards;
   }
-
   .intro-logo {
-    font-family: var(--display);
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    font-weight: 800;
-    letter-spacing: -2px;
-    color: #fff;
-    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(2.5rem, 8vw, 5rem); letter-spacing: -2px; color: #fff;
+    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both;
   }
   .intro-logo span { color: var(--accent); }
-
   .intro-bar {
-    margin-top: 32px;
-    width: 200px;
-    height: 2px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both;
+    margin-top: 28px; width: 180px; height: 2px;
+    background: var(--border); border-radius: 2px; overflow: hidden;
+    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.4s both;
   }
-  .intro-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    animation: barFill 2s ease 0.7s forwards;
-    width: 0;
-  }
-
+  .intro-bar-fill { height: 100%; background: var(--accent); width: 0; animation: barFill 2.2s ease 0.6s forwards; }
   .intro-sub {
-    margin-top: 14px;
-    font-size: 0.72rem;
-    color: var(--muted);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.7s both;
+    margin-top: 12px; font-size: 0.7rem; color: var(--muted);
+    letter-spacing: 3px; text-transform: uppercase;
+    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s both;
   }
-
-  @keyframes logoIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
-  @keyframes barFill { to { width: 100%; } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+  @keyframes barFill { to { width:100%; } }
   @keyframes introOut { to { opacity:0; pointer-events:none; } }
 
-  /* ── layout ── */
+  /* ── SHELL ── */
   .shell {
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    max-width: 1080px;
-    width: 92%;
-    margin: 0 auto;
-    padding: 48px 0 80px;
-    opacity: 0;
-    animation: fadeUp 0.7s ease 3s forwards;
+    position: relative; z-index: 1;
+    flex: 1; display: flex; flex-direction: column;
+    max-width: 1100px; width: 92%;
+    margin: 0 auto; padding: 48px 0 80px;
+    opacity: 0; animation: fadeIn 0.6s ease 3.2s forwards;
   }
-  @keyframes fadeUp { to { opacity:1; } }
+  @keyframes fadeIn { to { opacity:1; } }
 
-  /* ── header ── */
-  header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin-bottom: 48px;
-    flex-wrap: wrap;
-    gap: 12px;
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex; gap: 4px; margin-bottom: 36px;
+    border-bottom: 1px solid var(--border); padding-bottom: 0;
   }
+  .tab {
+    padding: 10px 22px; background: none; border: none; cursor: pointer;
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab.deob-tab { color: var(--orange); }
+  .tab.deob-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
 
+  /* ── PAGES ── */
+  .page { display: none; flex-direction: column; }
+  .page.active { display: flex; animation: fadeIn 0.3s ease; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  }
   .logo-text {
-    font-family: var(--display);
-    font-size: clamp(1.8rem, 5vw, 2.8rem);
-    font-weight: 800;
-    letter-spacing: -1px;
-    color: #fff;
-    line-height: 1;
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -1px; color: #fff; line-height: 1;
   }
   .logo-text span { color: var(--accent); }
-
-  .badge-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
+  .logo-text.deob span { color: var(--orange); }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .badge {
-    font-size: 0.65rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    color: var(--muted);
+    font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted);
   }
-  .badge.active {
-    border-color: var(--accent2);
-    color: var(--accent);
-    background: rgba(93,255,180,0.06);
-  }
+  .badge.green { border-color: var(--accent2); color: var(--accent); background: rgba(93,255,180,0.06); }
+  .badge.orange { border-color: var(--orange); color: var(--orange); background: rgba(255,170,93,0.06); }
 
-  /* ── panels ── */
-  .panels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  @media(max-width:700px) { .panels { grid-template-columns: 1fr; } }
+  /* ── PANELS ── */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:680px) { .panels { grid-template-columns: 1fr; } }
 
   .panel {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
   }
-
   .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface2);
   }
-
-  .panel-title {
-    font-size: 0.68rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .panel-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--border);
-  }
+  .panel-title { font-size: 0.66rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .panel-actions { display: flex; align-items: center; gap: 10px; }
+  .panel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
   .panel-dot.green { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+  .panel-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
 
-  textarea, #output {
-    flex: 1;
-    min-height: 320px;
-    padding: 20px;
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    line-height: 1.7;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    resize: none;
-    outline: none;
+  .copy-btn {
+    font-family: var(--mono); font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border);
+    background: none; color: var(--muted); cursor: pointer; transition: all 0.15s;
   }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent2); }
+  .copy-btn.ok { color: var(--accent2); border-color: var(--accent2); background: rgba(93,255,180,0.08); }
+  .copy-btn.orange-theme:hover { color: var(--orange); border-color: var(--orange); }
+  .copy-btn.orange-theme.ok { color: var(--orange); border-color: var(--orange); background: rgba(255,170,93,0.08); }
 
+  textarea, .out-box {
+    flex: 1; min-height: 300px; padding: 20px;
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.75;
+    background: transparent; border: none; color: var(--text);
+    resize: none; outline: none;
+  }
   textarea::placeholder { color: var(--muted); }
-
-  #output {
-    white-space: pre-wrap;
-    word-break: break-all;
-    color: var(--accent);
-    overflow: auto;
-    transition: opacity 0.2s;
+  .out-box {
+    white-space: pre-wrap; word-break: break-all;
+    color: var(--accent); overflow: auto; transition: opacity 0.2s;
   }
-  #output.dim { opacity: 0.3; }
+  .out-box.dim { opacity: 0.2; }
+  .out-box.orange { color: var(--orange); }
 
-  /* ── action bar ── */
-  .action-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-  }
+  /* ── ACTION BAR ── */
+  .action-bar { display: flex; align-items: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 13px 28px;
-    border: none;
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 26px; border: none; border-radius: 8px;
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
   }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #07080a;
-  }
-  .btn-primary:hover {
-    background: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(93,255,180,0.25);
-  }
-  .btn-primary:active { transform: none; }
-
-  .btn-ghost {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+  .btn-primary { background: var(--accent); color: #07080a; }
+  .btn-primary:hover:not(:disabled) { background: #fff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(93,255,180,0.2); }
+  .btn-orange { background: var(--orange); color: #07080a; }
+  .btn-orange:hover:not(:disabled) { background: #ffd0a0; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,170,93,0.2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
   .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-outline-green { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
+  .btn-outline-green:hover:not(:disabled) { background: rgba(93,255,180,0.07); transform: translateY(-2px); }
+  .btn-outline-orange { background: transparent; color: var(--orange); border: 1px solid var(--orange); }
+  .btn-outline-orange:hover:not(:disabled) { background: rgba(255,170,93,0.07); transform: translateY(-2px); }
 
-  .btn-download {
-    background: transparent;
-    color: var(--accent2);
-    border: 1px solid var(--accent2);
-  }
-  .btn-download:hover {
-    background: rgba(93,255,180,0.08);
-    transform: translateY(-2px);
-  }
-  .btn-download:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* spinner */
   .spin {
-    display: none;
-    width: 16px; height: 16px;
-    border: 2px solid #07080a;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    display: none; width: 15px; height: 15px;
+    border: 2px solid #07080a; border-top-color: transparent;
+    border-radius: 50%; animation: spinA 0.7s linear infinite;
   }
-  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes spinA { to { transform: rotate(360deg); } }
 
-  /* ── footer ── */
+  /* ── DEOB NOTICE ── */
+  .deob-notice {
+    background: rgba(255,170,93,0.05); border: 1px solid rgba(255,170,93,0.2);
+    border-radius: 8px; padding: 14px 18px; font-size: 0.72rem;
+    color: #c98040; line-height: 1.7; margin-bottom: 20px;
+  }
+  .deob-notice strong { color: var(--orange); }
+  .deob-notice code { color: var(--orange); }
+
+  /* ── CHEAT HINT TOAST ── */
+  #cheat-hint {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px;
+    font-size: 0.63rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+    display: none; z-index: 50; animation: hintPop 0.35s cubic-bezier(0.16,1,0.3,1);
+  }
+  .hint-key {
+    display: inline-block; background: var(--border); color: var(--text);
+    padding: 2px 7px; border-radius: 4px; margin: 0 2px; font-size: 0.68rem;
+  }
+  .hint-key.done { color: var(--accent); border: 1px solid var(--accent2); background: rgba(93,255,180,0.1); }
+  @keyframes hintPop { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  /* ── UNLOCK FLASH ── */
+  #unlock-flash {
+    position: fixed; inset: 0; background: rgba(255,170,93,0.07);
+    pointer-events: none; z-index: 300; display: none;
+    animation: none;
+  }
+
+  /* ── FOOTER ── */
   footer {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: 20px;
-    font-size: 0.65rem;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    text-transform: uppercase;
+    position: relative; z-index: 1;
+    text-align: center; padding: 20px;
+    font-size: 0.62rem; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
   }
   footer a { color: var(--accent2); text-decoration: none; }
 </style>
 </head>
 <body>
 
-<!-- intro -->
 <div id="intro">
   <div class="intro-logo">Lua<span>Shield</span></div>
   <div class="intro-bar"><div class="intro-bar-fill"></div></div>
   <div class="intro-sub">Extreme Obfuscation Engine</div>
 </div>
 
-<!-- app -->
+<div id="unlock-flash"></div>
+<div id="cheat-hint"></div>
+
 <div class="shell">
 
-  <header>
-    <div class="logo-text">Lua<span>Shield</span></div>
-    <div class="badge-row">
-      <div class="badge active">Extreme Protection</div>
-      <div class="badge active">Anti-Reverse</div>
-      <div class="badge active">Preserve Functionality</div>
-    </div>
-  </header>
+  <div class="tab-bar" id="tabBar">
+    <button class="tab active" id="tab-obf" onclick="switchTab('obf')">⚡ Obfuscator</button>
+  </div>
 
-  <div class="panels">
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Input — Lua Source</span>
-        <div class="panel-dot"></div>
+  <!-- ══ OBFUSCATOR PAGE ══ -->
+  <div class="page active" id="page-obf">
+    <div class="page-header">
+      <div class="logo-text">Lua<span>Shield</span></div>
+      <div class="badge-row">
+        <div class="badge green">Extreme Protection</div>
+        <div class="badge green">Anti-Reverse</div>
+        <div class="badge green">Preserve Functionality</div>
       </div>
-      <textarea id="inputCode" placeholder="-- Paste your Lua code here...&#10;&#10;local function greet(name)&#10;  print('Hello, ' .. name)&#10;end&#10;greet('World')"></textarea>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">Output — Obfuscated</span>
-        <div class="panel-dot" id="outputDot"></div>
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Input — Lua Source</span>
+          <div class="panel-dot"></div>
+        </div>
+        <textarea id="inputCode" placeholder="-- Paste your Lua code here...
+
+local function greet(name)
+  print('Hello, ' .. name)
+end
+greet('World')"></textarea>
       </div>
-      <div id="output"></div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Output — Obfuscated</span>
+          <div class="panel-actions">
+            <button class="copy-btn" id="obfCopy" onclick="copyOut('obfOut','obfCopy',false)" style="display:none">Copy</button>
+            <div class="panel-dot" id="obfDot"></div>
+          </div>
+        </div>
+        <div class="out-box" id="obfOut"></div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" id="obfBtn" onclick="doObfuscate()">
+        <div class="spin" id="obfSpin"></div>
+        <span id="obfLbl">⚡ Obfuscate</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearObf()">Clear</button>
+      <button class="btn btn-outline-green" id="obfDl" onclick="dlFile('obfOut','obfuscated.lua')" disabled>↓ Download .lua</button>
     </div>
   </div>
 
-  <div class="action-bar">
-    <button class="btn btn-primary" id="obfBtn" onclick="obfuscateCode()">
-      <div class="spin" id="spinner"></div>
-      <span id="obfLabel">⚡ Obfuscate</span>
-    </button>
-    <button class="btn btn-ghost" onclick="clearFields()">Clear</button>
-    <button class="btn btn-download" id="dlBtn" onclick="downloadOutput()" disabled>↓ Download .lua</button>
+  <!-- ══ DEOBFUSCATOR PAGE ══ -->
+  <div class="page" id="page-deob">
+    <div class="page-header">
+      <div class="logo-text deob">Lua<span>Reveal</span></div>
+      <div class="badge-row">
+        <div class="badge orange">🔓 Dev Tool</div>
+        <div class="badge orange">Identifier-Aware</div>
+      </div>
+    </div>
+
+    <div class="deob-notice">
+      <strong>LuaShield Deobfuscator</strong> — Only works on code obfuscated by this tool.
+      Detects the embedded <code>--[[ Identifier: ... ]]</code> footer, then reverses:
+      <code>string.char()</code> calls, boolean wrappers, number noise, junk control-flow, and <code>_vx</code> variable names.
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Input — Obfuscated Code</span>
+          <div class="panel-dot"></div>
+        </div>
+        <textarea id="deobIn" placeholder="-- Paste LuaShield-obfuscated code here...
+-- Must contain the --[[ Identifier: ... ]] footer."></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Output — Deobfuscated</span>
+          <div class="panel-actions">
+            <button class="copy-btn orange-theme" id="deobCopy" onclick="copyOut('deobOut','deobCopy',true)" style="display:none">Copy</button>
+            <div class="panel-dot" id="deobDot"></div>
+          </div>
+        </div>
+        <div class="out-box orange" id="deobOut"></div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-orange" id="deobBtn" onclick="doDeobfuscate()">
+        <div class="spin" id="deobSpin" style="border-color:#07080a;"></div>
+        <span id="deobLbl">🔍 Deobfuscate</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearDeob()">Clear</button>
+      <button class="btn btn-outline-orange" id="deobDl" onclick="dlFile('deobOut','deobfuscated.lua')" disabled>↓ Download .lua</button>
+    </div>
   </div>
 
 </div>
 
-<footer>
-  Made by <a href="#">@vxpe_injected</a> on Discord &nbsp;·&nbsp; LuaShield v2.04.3
-</footer>
+<footer>Made by <a href="#">@vxpe_injected</a> on Discord &nbsp;·&nbsp; LuaShield v2.04.3</footer>
 
 <script>
-// Always-on settings
-const protectionLevel = 'extreme';
-const antiReverseEngineering = 'extreme';
-const preserveFunctionality = true;
+// ═══════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+}
 
-function obfuscateCode() {
-  const btn = document.getElementById('obfBtn');
-  const spinner = document.getElementById('spinner');
-  const label = document.getElementById('obfLabel');
-  const out = document.getElementById('output');
-  const dot = document.getElementById('outputDot');
-  const dlBtn = document.getElementById('dlBtn');
+// ═══════════════════════════════════════════
+//  CHEAT CODE:  ← → → ↑
+// ═══════════════════════════════════════════
+const CHEAT_SEQ = ['ArrowLeft','ArrowRight','ArrowRight','ArrowUp'];
+const CHEAT_LABELS = ['←','→','→','↑'];
+let cheatIdx = 0;
+let deobUnlocked = false;
+let hintTimer = null;
 
+document.addEventListener('keydown', e => {
+  const arrow = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+  if (!arrow.includes(e.key)) return;
+
+  if (e.key === CHEAT_SEQ[cheatIdx]) {
+    cheatIdx++;
+    if (!deobUnlocked) renderHint();
+    if (cheatIdx === CHEAT_SEQ.length) {
+      cheatIdx = 0;
+      if (!deobUnlocked) unlockDeob();
+    }
+  } else {
+    cheatIdx = 0;
+    if (e.key === CHEAT_SEQ[0]) { cheatIdx = 1; if (!deobUnlocked) renderHint(); }
+  }
+});
+
+function renderHint() {
+  const el = document.getElementById('cheat-hint');
+  let html = '';
+  CHEAT_LABELS.forEach((lbl, i) => {
+    const cls = i < cheatIdx ? 'hint-key done' : 'hint-key';
+    html += `<span class="${cls}">${lbl}</span>`;
+  });
+  el.innerHTML = html;
+  el.style.display = 'block';
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { el.style.display = 'none'; }, 2000);
+}
+
+function unlockDeob() {
+  deobUnlocked = true;
+  document.getElementById('cheat-hint').style.display = 'none';
+
+  // Screen flash
+  const flash = document.getElementById('unlock-flash');
+  flash.style.display = 'block';
+  setTimeout(() => flash.style.display = 'none', 450);
+
+  // Inject deob tab
+  const bar = document.getElementById('tabBar');
+  const btn = document.createElement('button');
+  btn.className = 'tab deob-tab';
+  btn.id = 'tab-deob';
+  btn.textContent = '🔓 Deobfuscator';
+  btn.onclick = () => switchTab('deob');
+  bar.appendChild(btn);
+
+  setTimeout(() => switchTab('deob'), 140);
+}
+
+// ═══════════════════════════════════════════
+//  COPY
+// ═══════════════════════════════════════════
+function copyOut(elId, btnId, isOrange) {
+  const text = document.getElementById(elId).textContent;
+  if (!text.trim()) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1600);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  DOWNLOAD
+// ═══════════════════════════════════════════
+function dlFile(elId, fname) {
+  const text = document.getElementById(elId).textContent;
+  if (!text.trim()) return;
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([text], {type:'text/plain'})),
+    download: fname
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ═══════════════════════════════════════════
+//  OBFUSCATOR UI
+// ═══════════════════════════════════════════
+function doObfuscate() {
+  const out = document.getElementById('obfOut');
+  setBusy('obfBtn','obfSpin','obfLbl','Working…');
   out.classList.add('dim');
-  spinner.style.display = 'block';
-  label.textContent = 'Working…';
-  btn.disabled = true;
-  dlBtn.disabled = true;
-  dot.classList.remove('green');
+  document.getElementById('obfDot').classList.remove('green');
+  document.getElementById('obfDl').disabled = true;
+  document.getElementById('obfCopy').style.display = 'none';
 
   setTimeout(() => {
     const code = document.getElementById('inputCode').value || '';
-    let result = applyObfuscation(code, protectionLevel, antiReverseEngineering);
-    result = appendIdentifier(result);
-
+    const result = appendIdentifier(applyObfuscation(code));
     out.textContent = result;
     out.classList.remove('dim');
-    spinner.style.display = 'none';
-    label.textContent = '⚡ Obfuscate';
-    btn.disabled = false;
-    dot.classList.add('green');
-    if (result.trim()) dlBtn.disabled = false;
-  }, 400);
+    document.getElementById('obfDot').classList.add('green');
+    document.getElementById('obfDl').disabled = false;
+    document.getElementById('obfCopy').style.display = 'block';
+    setIdle('obfBtn','obfSpin','obfLbl','⚡ Obfuscate');
+  }, 420);
 }
 
-function clearFields() {
+function clearObf() {
   document.getElementById('inputCode').value = '';
-  document.getElementById('output').textContent = '';
-  document.getElementById('outputDot').classList.remove('green');
-  document.getElementById('dlBtn').disabled = true;
+  document.getElementById('obfOut').textContent = '';
+  document.getElementById('obfDot').classList.remove('green');
+  document.getElementById('obfDl').disabled = true;
+  document.getElementById('obfCopy').style.display = 'none';
 }
 
-function downloadOutput() {
-  const text = document.getElementById('output').textContent;
-  if (!text.trim()) return;
-  const blob = new Blob([text], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'obfuscated.lua';
-  a.click();
-  URL.revokeObjectURL(url);
-}
+// ═══════════════════════════════════════════
+//  DEOBFUSCATOR UI
+// ═══════════════════════════════════════════
+function doDeobfuscate() {
+  const input = document.getElementById('deobIn').value || '';
+  const out = document.getElementById('deobOut');
 
-// ── obfuscation engine ──
-
-function applyObfuscation(code, level, antiReverse) {
-  let obf = String(code || '');
-  if (!obf.trim()) return obf;
-
-  obf = removeBlockComments(obf);
-  obf = removeLineComments(obf);
-  obf = safeMinifyWhitespace(obf);
-
-  const pipeline = [stringToCharCalls, advancedControlFlowObfuscation,
-    (c) => deadCodeInsertion(c, preserveFunctionality), safeLocalRename,
-    booleanObfuscation, simpleNumberObfuscation, dataObfuscation, safeFunctionInlining];
-
-  for (const fn of pipeline) obf = fn(obf);
-
-  const antiPipeline = [advancedControlFlowObfuscation, dataObfuscation,
-    safeFunctionInlining, (c) => junkCodeInsertion(c, preserveFunctionality)];
-  for (const fn of antiPipeline) obf = fn(obf);
-
-  return obf;
-}
-
-function mapOutsideStrings(code, fn) {
-  let out = ''; let i = 0; const len = code.length;
-  while (i < len) {
-    const ch = code[i];
-    if (ch === '"' || ch === "'") {
-      const quote = ch; out += ch; i++;
-      while (i < len) {
-        const cc = code[i]; out += cc; i++;
-        if (cc === '\\') { if (i < len) { out += code[i]; i++; } continue; }
-        if (cc === quote) break;
-      }
-    } else {
-      let j = i;
-      while (j < len && code[j] !== '"' && code[j] !== "'") j++;
-      out += fn(code.slice(i, j)); i = j;
-    }
+  if (!/--\[\[\s*Identifier:\s*[A-Za-z0-9]{20,}\s*\]\]/.test(input)) {
+    out.textContent = '-- ✗  No LuaShield identifier found.\n-- This tool only works on code obfuscated by LuaShield.';
+    return;
   }
-  return out;
+
+  setBusy('deobBtn','deobSpin','deobLbl','Analysing…');
+  out.classList.add('dim');
+  document.getElementById('deobDot').classList.remove('orange');
+  document.getElementById('deobDl').disabled = true;
+  document.getElementById('deobCopy').style.display = 'none';
+
+  setTimeout(() => {
+    out.textContent = applyDeobfuscation(input);
+    out.classList.remove('dim');
+    document.getElementById('deobDot').classList.add('orange');
+    document.getElementById('deobDl').disabled = false;
+    document.getElementById('deobCopy').style.display = 'block';
+    setIdle('deobBtn','deobSpin','deobLbl','🔍 Deobfuscate');
+  }, 480);
 }
 
-function removeBlockComments(code) { return mapOutsideStrings(code, s => s.replace(/--\[\[[\s\S]*?\]\]/g, '')); }
-function removeLineComments(code) { return mapOutsideStrings(code, s => s.replace(/--[^\n\r]*/g, '')); }
+function clearDeob() {
+  document.getElementById('deobIn').value = '';
+  document.getElementById('deobOut').textContent = '';
+  document.getElementById('deobDot').classList.remove('orange');
+  document.getElementById('deobDl').disabled = true;
+  document.getElementById('deobCopy').style.display = 'none';
+}
 
-function safeMinifyWhitespace(code) {
-  return mapOutsideStrings(code, outside => {
-    let s = outside.replace(/\s+/g, ' ');
-    s = s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g, '$1');
-    s = s.replace(/\blocal([A-Za-z_])/g, 'local $1');
-    s = s.replace(/\bfunction([ (])/g, 'function $1');
-    s = s.replace(/\bend([^\w])/g, 'end$1');
-    return s.trim();
+function setBusy(b,s,l,txt) {
+  document.getElementById(b).disabled = true;
+  document.getElementById(s).style.display = 'block';
+  document.getElementById(l).textContent = txt;
+}
+function setIdle(b,s,l,txt) {
+  document.getElementById(b).disabled = false;
+  document.getElementById(s).style.display = 'none';
+  document.getElementById(l).textContent = txt;
+}
+
+// ═══════════════════════════════════════════
+//  DEOBFUSCATION ENGINE
+// ═══════════════════════════════════════════
+function applyDeobfuscation(code) {
+  let r = String(code);
+
+  // 1. Strip identifier comment
+  r = r.replace(/\n*--\[\[\s*Identifier:\s*[A-Za-z0-9]+\s*\]\]/g, '');
+
+  // 2. Reverse string.char(N,N,...) → "string"
+  r = r.replace(/string\.char\(([\d,\s]+)\)/g, (_, args) => {
+    try {
+      const nums = args.split(',').map(n => parseInt(n.trim(), 10));
+      if (nums.some(isNaN)) return _;
+      const str = nums.map(n => String.fromCharCode(n)).join('');
+      return '"' + str.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"';
+    } catch { return _; }
   });
-}
 
-function stringToCharCalls(code) {
-  return mapOutsideStrings(code, outside =>
-    outside.replace(/(["'])([^\1\\]{1,120}?)\1/g, (m, quote, inner) => {
-      if (/[\\\r\n]/.test(inner)) return m;
-      if (inner.length === 0) return quote + quote;
-      return `string.char(${[...inner].map(ch => ch.charCodeAt(0)).join(',')})`;
-    })
-  );
-}
+  // 3. Reverse boolean obfuscation
+  r = r.replace(/\(1==1\)/g, 'true').replace(/\(1==0\)/g, 'false');
 
-function basicControlFlowObfuscation(code) {
-  return mapOutsideStrings(code, outside => outside.replace(/;/g, '; if true then end'));
-}
+  // 4. Reverse number wrappers  (N + 0)  and  (N+K-K)
+  r = r.replace(/\((\d+(?:\.\d+)?)\s*\+\s*0\)/g, '$1');
+  r = r.replace(/\((\d+(?:\.\d+)?)\s*\+\s*(\d+)\s*-\s*\2\)/g, '$1');
 
-function advancedControlFlowObfuscation(code) {
-  const a = genName(), b = genName();
-  return `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n` + code;
-}
+  // 5. Strip junk do..end blocks from advancedControlFlowObfuscation
+  r = r.replace(/do\s+local\s+_vx[0-9a-f]+=\s*0\s*;\s*local\s+_vx[0-9a-f]+=\s*1\s*;\s*if\s+_vx[0-9a-f]+\s*<\s*_vx[0-9a-f]+\s*then[\s\S]*?end\s+end\n?/g, '');
 
-function deadCodeInsertion(code, preserve) {
-  if (preserve) return code;
-  const f = genName(), v = genName();
-  return `local function ${f}() local ${v} = ${Math.floor(Math.random()*999)}; return ${v}; end\n` + code;
-}
+  // 6. Strip "; if true then end" junk (basicControlFlow)
+  r = r.replace(/;\s*if\s*true\s*then\s*end/g, ';');
 
-function junkCodeInsertion(code, preserve) {
-  if (preserve) return code;
-  const stmts = [`local ${genName()} = 1`, `local ${genName()} = string.char(72,101,108)`, `if (1==1) then end`];
-  return stmts[Math.floor(Math.random()*stmts.length)] + '\n' + code;
-}
-
-function safeLocalRename(code) {
-  const safe = new Set(['game','workspace','script','instance','Instance','require','task','wait','print','warn','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof']);
-  let replacements = Object.create(null);
-  const localDeclRegex = /\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g;
-  let m;
-  while ((m = localDeclRegex.exec(code))) {
-    const name = m[1];
-    if (!safe.has(name) && !replacements[name]) replacements[name] = genName();
-  }
-  if (!Object.keys(replacements).length) return code;
-  return mapOutsideStrings(code, chunk => {
-    for (const orig in replacements) chunk = chunk.replace(new RegExp(`\\b${orig}\\b`, 'g'), replacements[orig]);
-    return chunk;
+  // 7. Rename _vxABCDEF... → readable placeholders sequentially
+  const seen = new Map(); let ctr = 1;
+  r = r.replace(/_vx[0-9a-f]{6,}/g, name => {
+    if (!seen.has(name)) seen.set(name, `_v${ctr++}`);
+    return seen.get(name);
   });
+
+  // 8. Basic pretty-print: expand semicolons & keywords to newlines
+  r = r
+    .replace(/;\s*/g, ';\n')
+    .replace(/\bthen\b\s*/g, 'then\n')
+    .replace(/\bdo\b\s*/g, 'do\n')
+    .replace(/\bend\b/g, 'end\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return r + '\n\n-- Deobfuscated by LuaShield Reveal';
 }
 
-function safeFunctionInlining(code) {
-  const declRegex = /local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
-  const decls = []; let m;
-  while ((m = declRegex.exec(code))) {
-    const body = m[2].trim();
-    const sr = body.match(/^\s*return\s+([\s\S]+?)\s*$/);
-    if (sr) {
-      const expr = sr[1].trim();
-      if (!/[^0-9+\-*/().\s'"\[\],]/.test(expr) || /true|false|nil/.test(expr))
-        decls.push({ name: m[1], expr, fullMatch: m[0] });
-    }
-  }
-  if (!decls.length) return code;
-  let out = mapOutsideStrings(code, chunk => {
-    for (const d of decls) chunk = chunk.replace(new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`, 'g'), `(${d.expr})`);
-    return chunk;
-  });
-  for (const d of decls) out = out.replace(d.fullMatch, '');
-  return out;
-}
+// ═══════════════════════════════════════════
+//  OBFUSCATION ENGINE
+// ═══════════════════════════════════════════
+const PRESERVE = true;
 
-function booleanObfuscation(code) {
-  return mapOutsideStrings(code, o => o.replace(/\btrue\b/g, '(1==1)').replace(/\bfalse\b/g, '(1==0)'));
-}
-
-function simpleNumberObfuscation(code) {
-  return mapOutsideStrings(code, o => o.replace(/\b(\d+(\.\d+)?)\b/g, (m, n) => Math.random() < 0.35 ? `(${n} + 0)` : n));
-}
-
-function dataObfuscation(code) {
-  return mapOutsideStrings(code, o => {
-    const off = Math.floor(Math.random()*50)+1;
-    return o.replace(/\b(\d+(\.\d+)?)\b/g, (m, n) => Math.random() < 0.25 ? `(${n}+${off}-${off})` : n);
-  });
-}
-
-function appendIdentifier(code) {
-  const id = generateId(64);
-  return String(code||'') + '\n\n--[[ Identifier: ' + id + ' ]]';
-}
-
-function generateId(len=48) {
-  const ch = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let o = '';
-  for (let i=0; i<len; i++) o += ch.charAt(Math.floor(Math.random()*ch.length));
+function applyObfuscation(code) {
+  let o = String(code || '');
+  if (!o.trim()) return o;
+  o = rmBlockComments(o);
+  o = rmLineComments(o);
+  o = minifyWS(o);
+  [strToChar, advCF, c=>deadCode(c,PRESERVE), localRename,
+   boolObf, numObf, dataObf, fnInline].forEach(fn => o = fn(o));
+  [advCF, dataObf, fnInline, c=>junkCode(c,PRESERVE)].forEach(fn => o = fn(o));
   return o;
 }
 
-function genName() {
-  return `_vx${Math.floor(Math.random()*0xFFFFFF).toString(16)}${Math.floor(Math.random()*0xFFFFFF).toString(16)}`;
+function mos(code, fn) { // map outside strings
+  let out='', i=0, len=code.length;
+  while (i<len) {
+    const ch=code[i];
+    if (ch==='"'||ch==="'") {
+      const q=ch; out+=ch; i++;
+      while(i<len){ const cc=code[i]; out+=cc; i++;
+        if(cc==='\\'){if(i<len){out+=code[i];i++;} continue;}
+        if(cc===q) break;
+      }
+    } else {
+      let j=i; while(j<len&&code[j]!=='"'&&code[j]!=="'") j++;
+      out+=fn(code.slice(i,j)); i=j;
+    }
+  }
+  return out;
 }
+
+function rmBlockComments(c){return mos(c,s=>s.replace(/--\[\[[\s\S]*?\]\]/g,''));}
+function rmLineComments(c){return mos(c,s=>s.replace(/--[^\n\r]*/g,''));}
+function minifyWS(code){
+  return mos(code,o=>{
+    let s=o.replace(/\s+/g,' ');
+    s=s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g,'$1');
+    s=s.replace(/\blocal([A-Za-z_])/g,'local $1');
+    s=s.replace(/\bfunction([ (])/g,'function $1');
+    s=s.replace(/\bend([^\w])/g,'end$1');
+    return s.trim();
+  });
+}
+function strToChar(code){
+  return mos(code,o=>o.replace(/(["'])([^\1\\]{1,120}?)\1/g,(m,q,inner)=>{
+    if(/[\\\r\n]/.test(inner)) return m;
+    if(!inner.length) return q+q;
+    return `string.char(${[...inner].map(c=>c.charCodeAt(0)).join(',')})`;
+  }));
+}
+function advCF(code){
+  const a=gn(),b=gn();
+  return `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n`+code;
+}
+function deadCode(code,pf){if(pf) return code; const f=gn(),v=gn(); return `local function ${f}() local ${v}=${Math.floor(Math.random()*999)}; return ${v}; end\n`+code;}
+function junkCode(code,pf){if(pf) return code; const opts=[`local ${gn()}=1`,`local ${gn()}=string.char(72,101,108)`,`if(1==1)then end`]; return opts[Math.floor(Math.random()*opts.length)]+'\n'+code;}
+function localRename(code){
+  const safe=new Set(['game','workspace','script','instance','Instance','require','task','wait','print','warn','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof']);
+  const rep=Object.create(null);
+  const rx=/\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g; let m;
+  while((m=rx.exec(code))) if(!safe.has(m[1])&&!rep[m[1]]) rep[m[1]]=gn();
+  if(!Object.keys(rep).length) return code;
+  return mos(code,chunk=>{for(const o in rep) chunk=chunk.replace(new RegExp(`\\b${o}\\b`,'g'),rep[o]); return chunk;});
+}
+function fnInline(code){
+  const rx=/local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
+  const decls=[]; let m;
+  while((m=rx.exec(code))){
+    const body=m[2].trim(), sr=body.match(/^\s*return\s+([\s\S]+?)\s*$/);
+    if(sr){const e=sr[1].trim(); if(!/[^0-9+\-*/().\s'"\[\],]/.test(e)||/true|false|nil/.test(e)) decls.push({name:m[1],expr:e,full:m[0]});}
+  }
+  if(!decls.length) return code;
+  let out=mos(code,chunk=>{for(const d of decls) chunk=chunk.replace(new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`,'g'),`(${d.expr})`); return chunk;});
+  for(const d of decls) out=out.replace(d.full,'');
+  return out;
+}
+function boolObf(code){return mos(code,o=>o.replace(/\btrue\b/g,'(1==1)').replace(/\bfalse\b/g,'(1==0)'));}
+function numObf(code){return mos(code,o=>o.replace(/\b(\d+(\.\d+)?)\b/g,(m,n)=>Math.random()<0.35?`(${n} + 0)`:n));}
+function dataObf(code){
+  return mos(code,o=>{
+    const off=Math.floor(Math.random()*50)+1;
+    return o.replace(/\b(\d+(\.\d+)?)\b/g,(m,n)=>Math.random()<0.25?`(${n}+${off}-${off})`:n);
+  });
+}
+function appendIdentifier(code){return String(code||'')+'\n\n--[[ Identifier: '+genId(64)+' ]]';}
+function genId(len=48){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; let o=''; for(let i=0;i<len;i++) o+=c[Math.floor(Math.random()*c.length)]; return o;}
+function gn(){return `_vx${Math.floor(Math.random()*0xFFFFFF).toString(16)}${Math.floor(Math.random()*0xFFFFFF).toString(16)}`;}
 </script>
 </body>
 </html>
