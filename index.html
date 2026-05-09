@@ -4,670 +4,902 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LuaShield</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2 L28 7 L28 17 C28 23.5 22.5 28.8 16 30 C9.5 28.8 4 23.5 4 17 L4 7 Z' fill='%2307080a' stroke='%235dffb4' stroke-width='1.5'/><path d='M11 16 L14.5 19.5 L21 13' stroke='%235dffb4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2L29 7.5V17C29 24 22.5 29.5 16 31 9.5 29.5 3 24 3 17V7.5Z' fill='%2307080a' stroke='%235dffb4' stroke-width='1.8'/><path d='M10.5 16.5l4 4 7-7.5' stroke='%235dffb4' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:       #07080a;
-    --surface:  #0e1015;
-    --surface2: #13161c;
-    --border:   #1e2330;
-    --accent:   #5dffb4;
-    --accent2:  #00c97a;
-    --text:     #d4dce8;
-    --muted:    #4a5568;
-    --orange:   #ffaa5d;
-    --mono: 'Space Mono', monospace;
-    --display: 'Syne', sans-serif;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #060709;
+  --s1:      #0c0e13;
+  --s2:      #111520;
+  --border:  #1a1f2e;
+  --border2: #242a3a;
+  --green:   #39ff8f;
+  --green2:  #00c96a;
+  --orange:  #ff9a3c;
+  --orange2: #e07820;
+  --text:    #c8d4e8;
+  --muted:   #3d4a62;
+  --muted2:  #5a6a88;
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-  body {
-    font-family: var(--mono);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(93,255,180,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(93,255,180,0.025) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none; z-index: 0;
-  }
+html,body{height:100%;}
+body{
+  font-family:var(--mono);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
 
-  /* ── INTRO ── */
-  #intro {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 200;
-    animation: introOut 0.6s ease 2.8s forwards;
-  }
-  .intro-logo {
-    font-family: var(--display); font-weight: 800;
-    font-size: clamp(2.5rem, 8vw, 5rem); letter-spacing: -2px; color: #fff;
-    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both;
-  }
-  .intro-logo span { color: var(--accent); }
-  .intro-bar {
-    margin-top: 28px; width: 180px; height: 2px;
-    background: var(--border); border-radius: 2px; overflow: hidden;
-    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.4s both;
-  }
-  .intro-bar-fill { height: 100%; background: var(--accent); width: 0; animation: barFill 2.2s ease 0.6s forwards; }
-  .intro-sub {
-    margin-top: 12px; font-size: 0.7rem; color: var(--muted);
-    letter-spacing: 3px; text-transform: uppercase;
-    animation: slideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s both;
-  }
-  @keyframes slideUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
-  @keyframes barFill { to { width:100%; } }
-  @keyframes introOut { to { opacity:0; pointer-events:none; } }
+/* scanline overlay */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+  pointer-events:none;z-index:999;
+}
 
-  /* ── SHELL ── */
-  .shell {
-    position: relative; z-index: 1;
-    flex: 1; display: flex; flex-direction: column;
-    max-width: 1100px; width: 92%;
-    margin: 0 auto; padding: 48px 0 80px;
-    opacity: 0; animation: fadeIn 0.6s ease 3.2s forwards;
-  }
-  @keyframes fadeIn { to { opacity:1; } }
+/* grid */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(57,255,143,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(57,255,143,0.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
 
-  /* ── TABS ── */
-  .tab-bar {
-    display: flex; gap: 4px; margin-bottom: 36px;
-    border-bottom: 1px solid var(--border); padding-bottom: 0;
-  }
-  .tab {
-    padding: 10px 22px; background: none; border: none; cursor: pointer;
-    font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--muted); border-bottom: 2px solid transparent;
-    margin-bottom: -1px; transition: all 0.2s;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab.deob-tab { color: var(--orange); }
-  .tab.deob-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+/* ── INTRO ── */
+#intro{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:500;
+  animation:introFade 0.5s ease 3s forwards;
+}
+.il{
+  font-family:var(--display);
+  font-size:clamp(3rem,10vw,7rem);
+  letter-spacing:4px;
+  color:#fff;
+  animation:iUp 1s cubic-bezier(.16,1,.3,1) .2s both;
+  position:relative;
+}
+.il span{color:var(--green);text-shadow:0 0 30px rgba(57,255,143,.4);}
+.il::after{
+  content:'';
+  position:absolute;bottom:-6px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);
+  animation:lineGrow 1.2s ease .8s both;
+  transform:scaleX(0);transform-origin:center;
+}
+@keyframes lineGrow{to{transform:scaleX(1);}}
+.isub{
+  margin-top:24px;font-size:.72rem;letter-spacing:5px;
+  text-transform:uppercase;color:var(--muted2);
+  animation:iUp 1s cubic-bezier(.16,1,.3,1) .5s both;
+}
+.ibar{
+  margin-top:36px;width:240px;height:1px;
+  background:var(--border);overflow:hidden;
+  animation:iUp 1s cubic-bezier(.16,1,.3,1) .6s both;
+}
+.ibar-fill{height:100%;background:var(--green);width:0;animation:iFill 2.4s ease .8s forwards;}
+@keyframes iUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+@keyframes iFill{to{width:100%;}}
+@keyframes introFade{to{opacity:0;pointer-events:none;}}
 
-  /* ── PAGES ── */
-  .page { display: none; flex-direction: column; }
-  .page.active { display: flex; animation: fadeIn 0.3s ease; }
+/* ── SHELL ── */
+.shell{
+  position:relative;z-index:1;
+  flex:1;display:flex;flex-direction:column;
+  max-width:1140px;width:93%;
+  margin:0 auto;padding:44px 0 80px;
+  opacity:0;animation:shellIn .6s ease 3.4s forwards;
+}
+@keyframes shellIn{to{opacity:1;}}
 
-  /* ── PAGE HEADER ── */
-  .page-header {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
-  }
-  .logo-text {
-    font-family: var(--display); font-weight: 800;
-    font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -1px; color: #fff; line-height: 1;
-  }
-  .logo-text span { color: var(--accent); }
-  .logo-text.deob span { color: var(--orange); }
-  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .badge {
-    font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase;
-    padding: 5px 12px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted);
-  }
-  .badge.green { border-color: var(--accent2); color: var(--accent); background: rgba(93,255,180,0.06); }
-  .badge.orange { border-color: var(--orange); color: var(--orange); background: rgba(255,170,93,0.06); }
+/* ── TAB BAR ── */
+.tabbar{
+  display:flex;align-items:flex-end;gap:2px;
+  margin-bottom:32px;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  padding:11px 24px;
+  font-family:var(--mono);font-size:.72rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--muted2);cursor:pointer;margin-bottom:-1px;
+  transition:all .2s;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+.tab.deob-tab{color:var(--orange);}
+.tab.deob-tab.active{color:var(--orange);border-bottom-color:var(--orange);}
 
-  /* ── PANELS ── */
-  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media(max-width:680px) { .panels { grid-template-columns: 1fr; } }
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;}
+.page.active{display:flex;animation:shellIn .3s ease;}
 
-  .panel {
-    display: flex; flex-direction: column;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
-  }
-  .panel-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-  .panel-title { font-size: 0.66rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
-  .panel-actions { display: flex; align-items: center; gap: 10px; }
-  .panel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-  .panel-dot.green { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
-  .panel-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+/* ── PAGE HEADER ── */
+.ph{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.ph-title{
+  font-family:var(--display);
+  font-size:clamp(2rem,5vw,3.2rem);
+  letter-spacing:3px;color:#fff;line-height:1;
+}
+.ph-title span{color:var(--green);}
+.ph-title.deob span{color:var(--orange);}
+.badges{display:flex;gap:8px;flex-wrap:wrap;}
+.badge{
+  font-size:.6rem;letter-spacing:2px;text-transform:uppercase;
+  padding:5px 12px;border-radius:3px;
+  border:1px solid var(--border2);color:var(--muted2);
+}
+.badge.g{border-color:rgba(57,255,143,.3);color:var(--green);background:rgba(57,255,143,.05);}
+.badge.o{border-color:rgba(255,154,60,.3);color:var(--orange);background:rgba(255,154,60,.05);}
 
-  .copy-btn {
-    font-family: var(--mono); font-size: 0.62rem; font-weight: 700;
-    letter-spacing: 1px; text-transform: uppercase;
-    padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border);
-    background: none; color: var(--muted); cursor: pointer; transition: all 0.15s;
-  }
-  .copy-btn:hover { color: var(--accent); border-color: var(--accent2); }
-  .copy-btn.ok { color: var(--accent2); border-color: var(--accent2); background: rgba(93,255,180,0.08); }
-  .copy-btn.orange-theme:hover { color: var(--orange); border-color: var(--orange); }
-  .copy-btn.orange-theme.ok { color: var(--orange); border-color: var(--orange); background: rgba(255,170,93,0.08); }
+/* ── PANELS ── */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:660px){.panels{grid-template-columns:1fr;}}
 
-  textarea, .out-box {
-    flex: 1; min-height: 300px; padding: 20px;
-    font-family: var(--mono); font-size: 0.78rem; line-height: 1.75;
-    background: transparent; border: none; color: var(--text);
-    resize: none; outline: none;
-  }
-  textarea::placeholder { color: var(--muted); }
-  .out-box {
-    white-space: pre-wrap; word-break: break-all;
-    color: var(--accent); overflow: auto; transition: opacity 0.2s;
-  }
-  .out-box.dim { opacity: 0.2; }
-  .out-box.orange { color: var(--orange); }
+.panel{
+  display:flex;flex-direction:column;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+  transition:border-color .2s;
+}
+.panel:focus-within{border-color:var(--border2);}
 
-  /* ── ACTION BAR ── */
-  .action-bar { display: flex; align-items: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 16px;
+  border-bottom:1px solid var(--border);
+  background:var(--s2);
+  flex-shrink:0;
+}
+.panel-label{font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);}
+.panel-right{display:flex;align-items:center;gap:10px;}
 
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 26px; border: none; border-radius: 8px;
-    font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
-    letter-spacing: 1px; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
-  }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
-  .btn-primary { background: var(--accent); color: #07080a; }
-  .btn-primary:hover:not(:disabled) { background: #fff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(93,255,180,0.2); }
-  .btn-orange { background: var(--orange); color: #07080a; }
-  .btn-orange:hover:not(:disabled) { background: #ffd0a0; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,170,93,0.2); }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
-  .btn-outline-green { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
-  .btn-outline-green:hover:not(:disabled) { background: rgba(93,255,180,0.07); transform: translateY(-2px); }
-  .btn-outline-orange { background: transparent; color: var(--orange); border: 1px solid var(--orange); }
-  .btn-outline-orange:hover:not(:disabled) { background: rgba(255,170,93,0.07); transform: translateY(-2px); }
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border2);}
+.dot.g{background:var(--green2);box-shadow:0 0 8px var(--green2);}
+.dot.o{background:var(--orange);box-shadow:0 0 8px var(--orange);}
 
-  .spin {
-    display: none; width: 15px; height: 15px;
-    border: 2px solid #07080a; border-top-color: transparent;
-    border-radius: 50%; animation: spinA 0.7s linear infinite;
-  }
-  @keyframes spinA { to { transform: rotate(360deg); } }
+.copybtn{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;
+  padding:3px 9px;border-radius:3px;
+  border:1px solid var(--border2);background:none;
+  color:var(--muted2);cursor:pointer;transition:all .15s;
+}
+.copybtn:hover{color:var(--green);border-color:var(--green2);}
+.copybtn.ok{color:var(--green2);border-color:var(--green2);background:rgba(57,255,143,.07);}
+.copybtn.orange:hover{color:var(--orange);border-color:var(--orange);}
+.copybtn.orange.ok{color:var(--orange);border-color:var(--orange);background:rgba(255,154,60,.07);}
 
-  /* ── DEOB NOTICE ── */
-  .deob-notice {
-    background: rgba(255,170,93,0.05); border: 1px solid rgba(255,170,93,0.2);
-    border-radius: 8px; padding: 14px 18px; font-size: 0.72rem;
-    color: #c98040; line-height: 1.7; margin-bottom: 20px;
-  }
-  .deob-notice strong { color: var(--orange); }
-  .deob-notice code { color: var(--orange); }
+textarea,.outbox{
+  flex:1;min-height:280px;
+  padding:18px;
+  font-family:var(--mono);font-size:.76rem;line-height:1.8;
+  background:transparent;border:none;
+  color:var(--text);resize:none;outline:none;
+}
+textarea::placeholder{color:var(--muted);}
+.outbox{
+  white-space:pre-wrap;word-break:break-all;
+  overflow:auto;transition:opacity .2s;
+  color:var(--green);
+}
+.outbox.dim{opacity:.15;}
+.outbox.oo{color:var(--orange);}
+.outbox.err{color:#ff5a72;}
 
-  /* ── CHEAT HINT TOAST ── */
-  #cheat-hint {
-    position: fixed; bottom: 28px; right: 28px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 16px;
-    font-size: 0.63rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
-    display: none; z-index: 50; animation: hintPop 0.35s cubic-bezier(0.16,1,0.3,1);
-  }
-  .hint-key {
-    display: inline-block; background: var(--border); color: var(--text);
-    padding: 2px 7px; border-radius: 4px; margin: 0 2px; font-size: 0.68rem;
-  }
-  .hint-key.done { color: var(--accent); border: 1px solid var(--accent2); background: rgba(93,255,180,0.1); }
-  @keyframes hintPop { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+/* ── ACTIONS ── */
+.actions{
+  display:flex;align-items:center;gap:10px;
+  margin-top:16px;flex-wrap:wrap;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 24px;border:none;border-radius:7px;
+  font-family:var(--mono);font-size:.73rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all .18s;
+}
+.btn:disabled{opacity:.3;cursor:not-allowed;transform:none!important;}
+.btn-g{background:var(--green);color:#060709;}
+.btn-g:hover:not(:disabled){background:#7fffcc;transform:translateY(-2px);box-shadow:0 8px 28px rgba(57,255,143,.2);}
+.btn-o{background:var(--orange);color:#060709;}
+.btn-o:hover:not(:disabled){background:#ffd090;transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,154,60,.2);}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--border2);}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted2);}
+.btn-og{background:transparent;color:var(--green2);border:1px solid var(--green2);}
+.btn-og:hover:not(:disabled){background:rgba(57,255,143,.07);transform:translateY(-2px);}
+.btn-oo{background:transparent;color:var(--orange);border:1px solid var(--orange);}
+.btn-oo:hover:not(:disabled){background:rgba(255,154,60,.07);transform:translateY(-2px);}
 
-  /* ── UNLOCK FLASH ── */
-  #unlock-flash {
-    position: fixed; inset: 0; background: rgba(255,170,93,0.07);
-    pointer-events: none; z-index: 300; display: none;
-    animation: none;
-  }
+.spin{
+  display:none;width:14px;height:14px;
+  border:2px solid #060709;border-top-color:transparent;
+  border-radius:50%;animation:rot .6s linear infinite;
+}
+@keyframes rot{to{transform:rotate(360deg);}}
 
-  /* ── FOOTER ── */
-  footer {
-    position: relative; z-index: 1;
-    text-align: center; padding: 20px;
-    font-size: 0.62rem; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
-  }
-  footer a { color: var(--accent2); text-decoration: none; }
+/* ── NOTICE BOX ── */
+.notice{
+  background:rgba(255,154,60,.04);
+  border:1px solid rgba(255,154,60,.18);
+  border-radius:8px;padding:14px 18px;
+  font-size:.71rem;color:#a06030;line-height:1.8;
+  margin-bottom:18px;
+}
+.notice strong{color:var(--orange);}
+.notice code{color:var(--orange);background:rgba(255,154,60,.1);padding:1px 5px;border-radius:3px;}
+
+/* ── CHEAT HINT ── */
+#hint{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:8px;padding:10px 16px;
+  font-size:.62rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted2);display:none;z-index:100;
+  animation:hpop .3s cubic-bezier(.16,1,.3,1);
+}
+.hk{
+  display:inline-block;
+  background:var(--border2);color:var(--text);
+  padding:2px 8px;border-radius:4px;margin:0 2px;
+  font-size:.68rem;border:1px solid var(--border2);
+}
+.hk.lit{color:var(--green);border-color:var(--green2);background:rgba(57,255,143,.1);}
+@keyframes hpop{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* ── FLASH ── */
+#flash{
+  position:fixed;inset:0;
+  background:rgba(57,255,143,.05);
+  pointer-events:none;z-index:900;display:none;
+}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:1;
+  text-align:center;padding:18px;
+  font-size:.6rem;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;
+}
+footer a{color:var(--green2);text-decoration:none;}
+footer a:hover{color:var(--green);}
 </style>
 </head>
 <body>
 
 <div id="intro">
-  <div class="intro-logo">Lua<span>Shield</span></div>
-  <div class="intro-bar"><div class="intro-bar-fill"></div></div>
-  <div class="intro-sub">Extreme Obfuscation Engine</div>
+  <div class="il">Lua<span>Shield</span></div>
+  <div class="isub">Extreme Obfuscation Engine</div>
+  <div class="ibar"><div class="ibar-fill"></div></div>
 </div>
 
-<div id="unlock-flash"></div>
-<div id="cheat-hint"></div>
+<div id="flash"></div>
+<div id="hint"></div>
 
 <div class="shell">
 
-  <div class="tab-bar" id="tabBar">
+  <div class="tabbar" id="tabbar">
     <button class="tab active" id="tab-obf" onclick="switchTab('obf')">⚡ Obfuscator</button>
   </div>
 
-  <!-- ══ OBFUSCATOR PAGE ══ -->
+  <!-- ═══ OBFUSCATOR ═══ -->
   <div class="page active" id="page-obf">
-    <div class="page-header">
-      <div class="logo-text">Lua<span>Shield</span></div>
-      <div class="badge-row">
-        <div class="badge green">Extreme Protection</div>
-        <div class="badge green">Anti-Reverse</div>
-        <div class="badge green">Preserve Functionality</div>
+    <div class="ph">
+      <div class="ph-title">Lua<span>Shield</span></div>
+      <div class="badges">
+        <span class="badge g">Extreme</span>
+        <span class="badge g">Anti-Reverse</span>
+        <span class="badge g">Single Line</span>
+        <span class="badge g">Reversible</span>
       </div>
     </div>
 
     <div class="panels">
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Input — Lua Source</span>
-          <div class="panel-dot"></div>
+        <div class="panel-head">
+          <span class="panel-label">Input — Lua Source</span>
+          <div class="dot" id="idot"></div>
         </div>
-        <textarea id="inputCode" placeholder="-- Paste your Lua code here...
+        <textarea id="icode" spellcheck="false" placeholder="-- Paste your Lua code here...
 
 local function greet(name)
   print('Hello, ' .. name)
 end
-greet('World')"></textarea>
+
+for i = 1, 5 do
+  greet('World')
+end"></textarea>
       </div>
 
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Output — Obfuscated</span>
-          <div class="panel-actions">
-            <button class="copy-btn" id="obfCopy" onclick="copyOut('obfOut','obfCopy',false)" style="display:none">Copy</button>
-            <div class="panel-dot" id="obfDot"></div>
+        <div class="panel-head">
+          <span class="panel-label">Output — Obfuscated</span>
+          <div class="panel-right">
+            <button class="copybtn" id="ocopy" onclick="doCopy('obox','ocopy',false)" style="display:none">Copy</button>
+            <div class="dot" id="odot"></div>
           </div>
         </div>
-        <div class="out-box" id="obfOut"></div>
+        <div class="outbox" id="obox"></div>
       </div>
     </div>
 
-    <div class="action-bar">
-      <button class="btn btn-primary" id="obfBtn" onclick="doObfuscate()">
-        <div class="spin" id="obfSpin"></div>
-        <span id="obfLbl">⚡ Obfuscate</span>
+    <div class="actions">
+      <button class="btn btn-g" id="obtn" onclick="doObf()">
+        <div class="spin" id="ospin"></div>
+        <span id="olbl">⚡ Obfuscate</span>
       </button>
       <button class="btn btn-ghost" onclick="clearObf()">Clear</button>
-      <button class="btn btn-outline-green" id="obfDl" onclick="dlFile('obfOut','obfuscated.lua')" disabled>↓ Download .lua</button>
+      <button class="btn btn-og" id="odl" onclick="dlFile('obox','obfuscated.lua')" disabled>↓ Download .lua</button>
     </div>
   </div>
 
-  <!-- ══ DEOBFUSCATOR PAGE ══ -->
+  <!-- ═══ DEOBFUSCATOR ═══ -->
   <div class="page" id="page-deob">
-    <div class="page-header">
-      <div class="logo-text deob">Lua<span>Reveal</span></div>
-      <div class="badge-row">
-        <div class="badge orange">🔓 Dev Tool</div>
-        <div class="badge orange">Identifier-Aware</div>
+    <div class="ph">
+      <div class="ph-title deob">Lua<span>Reveal</span></div>
+      <div class="badges">
+        <span class="badge o">🔓 Dev Tool</span>
+        <span class="badge o">LuaShield-Aware</span>
       </div>
     </div>
 
-    <div class="deob-notice">
+    <div class="notice">
       <strong>LuaShield Deobfuscator</strong> — Only works on code obfuscated by this tool.
-      Detects the embedded <code>--[[ Identifier: ... ]]</code> footer, then reverses:
-      <code>string.char()</code> calls, boolean wrappers, number noise, junk control-flow, and <code>_vx</code> variable names.
+      Verifies the <code>--[[LS:...]]</code> signature, then fully reverses the encoding back to clean Lua source.
     </div>
 
     <div class="panels">
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Input — Obfuscated Code</span>
-          <div class="panel-dot"></div>
+        <div class="panel-head">
+          <span class="panel-label">Input — Obfuscated Code</span>
+          <div class="dot" id="didot"></div>
         </div>
-        <textarea id="deobIn" placeholder="-- Paste LuaShield-obfuscated code here...
--- Must contain the --[[ Identifier: ... ]] footer."></textarea>
+        <textarea id="dicode" spellcheck="false" placeholder="-- Paste LuaShield-obfuscated code here...
+-- Must contain the --[[LS:...]] signature."></textarea>
       </div>
 
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Output — Deobfuscated</span>
-          <div class="panel-actions">
-            <button class="copy-btn orange-theme" id="deobCopy" onclick="copyOut('deobOut','deobCopy',true)" style="display:none">Copy</button>
-            <div class="panel-dot" id="deobDot"></div>
+        <div class="panel-head">
+          <span class="panel-label">Output — Deobfuscated</span>
+          <div class="panel-right">
+            <button class="copybtn orange" id="dcopy" onclick="doCopy('dobox','dcopy',true)" style="display:none">Copy</button>
+            <div class="dot" id="ddot"></div>
           </div>
         </div>
-        <div class="out-box orange" id="deobOut"></div>
+        <div class="outbox oo" id="dobox"></div>
       </div>
     </div>
 
-    <div class="action-bar">
-      <button class="btn btn-orange" id="deobBtn" onclick="doDeobfuscate()">
-        <div class="spin" id="deobSpin" style="border-color:#07080a;"></div>
-        <span id="deobLbl">🔍 Deobfuscate</span>
+    <div class="actions">
+      <button class="btn btn-o" id="dbtn" onclick="doDeobf()">
+        <div class="spin" id="dspin" style="border-color:#060709"></div>
+        <span id="dlbl">🔍 Deobfuscate</span>
       </button>
-      <button class="btn btn-ghost" onclick="clearDeob()">Clear</button>
-      <button class="btn btn-outline-orange" id="deobDl" onclick="dlFile('deobOut','deobfuscated.lua')" disabled>↓ Download .lua</button>
+      <button class="btn btn-ghost" onclick="clearDeobf()">Clear</button>
+      <button class="btn btn-oo" id="ddl" onclick="dlFile('dobox','deobfuscated.lua')" disabled>↓ Download .lua</button>
     </div>
   </div>
 
 </div>
 
-<footer>Made by <a href="#">@vxpe_injected</a> on Discord &nbsp;·&nbsp; LuaShield v2.04.3</footer>
+<footer>Made by <a href="#">@vxpe_injected</a> on Discord &nbsp;·&nbsp; LuaShield v3.0</footer>
 
 <script>
-// ═══════════════════════════════════════════
-//  TAB SWITCHING
-// ═══════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.getElementById('page-' + name).classList.add('active');
+// ══════════════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════════════
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  document.getElementById('page-'+n).classList.add('active');
 }
 
-// ═══════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 //  CHEAT CODE:  ← → → ↑
-// ═══════════════════════════════════════════
-const CHEAT_SEQ = ['ArrowLeft','ArrowRight','ArrowRight','ArrowUp'];
-const CHEAT_LABELS = ['←','→','→','↑'];
-let cheatIdx = 0;
-let deobUnlocked = false;
-let hintTimer = null;
+// ══════════════════════════════════════════════════════
+const SEQ=['ArrowLeft','ArrowRight','ArrowRight','ArrowUp'];
+const LBLS=['←','→','→','↑'];
+let ci=0, unlocked=false, ht=null;
 
-document.addEventListener('keydown', e => {
-  const arrow = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
-  if (!arrow.includes(e.key)) return;
-
-  if (e.key === CHEAT_SEQ[cheatIdx]) {
-    cheatIdx++;
-    if (!deobUnlocked) renderHint();
-    if (cheatIdx === CHEAT_SEQ.length) {
-      cheatIdx = 0;
-      if (!deobUnlocked) unlockDeob();
-    }
-  } else {
-    cheatIdx = 0;
-    if (e.key === CHEAT_SEQ[0]) { cheatIdx = 1; if (!deobUnlocked) renderHint(); }
-  }
+document.addEventListener('keydown',e=>{
+  const arrows=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+  if(!arrows.includes(e.key)) return;
+  if(e.key===SEQ[ci]){ ci++; if(!unlocked) showHint(); if(ci===SEQ.length){ci=0;if(!unlocked)unlock();} }
+  else{ ci=0; if(e.key===SEQ[0]){ci=1;if(!unlocked)showHint();} }
 });
 
-function renderHint() {
-  const el = document.getElementById('cheat-hint');
-  let html = '';
-  CHEAT_LABELS.forEach((lbl, i) => {
-    const cls = i < cheatIdx ? 'hint-key done' : 'hint-key';
-    html += `<span class="${cls}">${lbl}</span>`;
-  });
-  el.innerHTML = html;
-  el.style.display = 'block';
-  clearTimeout(hintTimer);
-  hintTimer = setTimeout(() => { el.style.display = 'none'; }, 2000);
+function showHint(){
+  const el=document.getElementById('hint');
+  el.innerHTML=LBLS.map((l,i)=>`<span class="hk${i<ci?' lit':''}">${l}</span>`).join('');
+  el.style.display='block';
+  clearTimeout(ht);
+  ht=setTimeout(()=>el.style.display='none',2000);
 }
 
-function unlockDeob() {
-  deobUnlocked = true;
-  document.getElementById('cheat-hint').style.display = 'none';
-
-  // Screen flash
-  const flash = document.getElementById('unlock-flash');
-  flash.style.display = 'block';
-  setTimeout(() => flash.style.display = 'none', 450);
-
-  // Inject deob tab
-  const bar = document.getElementById('tabBar');
-  const btn = document.createElement('button');
-  btn.className = 'tab deob-tab';
-  btn.id = 'tab-deob';
-  btn.textContent = '🔓 Deobfuscator';
-  btn.onclick = () => switchTab('deob');
+function unlock(){
+  unlocked=true;
+  document.getElementById('hint').style.display='none';
+  const fl=document.getElementById('flash');
+  fl.style.display='block';
+  setTimeout(()=>fl.style.display='none',400);
+  const bar=document.getElementById('tabbar');
+  const btn=document.createElement('button');
+  btn.className='tab deob-tab'; btn.id='tab-deob';
+  btn.textContent='🔓 Deobfuscator';
+  btn.onclick=()=>switchTab('deob');
   bar.appendChild(btn);
-
-  setTimeout(() => switchTab('deob'), 140);
+  setTimeout(()=>switchTab('deob'),120);
 }
 
-// ═══════════════════════════════════════════
-//  COPY
-// ═══════════════════════════════════════════
-function copyOut(elId, btnId, isOrange) {
-  const text = document.getElementById(elId).textContent;
-  if (!text.trim()) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById(btnId);
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    btn.classList.add('ok');
-    setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1600);
+// ══════════════════════════════════════════════════════
+//  COPY / DOWNLOAD
+// ══════════════════════════════════════════════════════
+function doCopy(eid,bid,isO){
+  const t=document.getElementById(eid).textContent;
+  if(!t.trim())return;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById(bid);
+    b.textContent='Copied!'; b.classList.add('ok');
+    setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok');},1600);
   });
 }
 
-// ═══════════════════════════════════════════
-//  DOWNLOAD
-// ═══════════════════════════════════════════
-function dlFile(elId, fname) {
-  const text = document.getElementById(elId).textContent;
-  if (!text.trim()) return;
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([text], {type:'text/plain'})),
-    download: fname
+function dlFile(eid,fname){
+  const t=document.getElementById(eid).textContent;
+  if(!t.trim())return;
+  const a=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(new Blob([t],{type:'text/plain'})),
+    download:fname
   });
-  a.click(); URL.revokeObjectURL(a.href);
+  a.click();URL.revokeObjectURL(a.href);
 }
 
-// ═══════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════
+function busy(b,s,l,txt){
+  document.getElementById(b).disabled=true;
+  document.getElementById(s).style.display='block';
+  document.getElementById(l).textContent=txt;
+}
+function idle(b,s,l,txt){
+  document.getElementById(b).disabled=false;
+  document.getElementById(s).style.display='none';
+  document.getElementById(l).textContent=txt;
+}
+
+// ══════════════════════════════════════════════════════
 //  OBFUSCATOR UI
-// ═══════════════════════════════════════════
-function doObfuscate() {
-  const out = document.getElementById('obfOut');
-  setBusy('obfBtn','obfSpin','obfLbl','Working…');
-  out.classList.add('dim');
-  document.getElementById('obfDot').classList.remove('green');
-  document.getElementById('obfDl').disabled = true;
-  document.getElementById('obfCopy').style.display = 'none';
+// ══════════════════════════════════════════════════════
+function doObf(){
+  const code=document.getElementById('icode').value||'';
+  if(!code.trim()){return;}
+  const box=document.getElementById('obox');
+  box.classList.add('dim'); box.classList.remove('err');
+  document.getElementById('odot').className='dot';
+  document.getElementById('odl').disabled=true;
+  document.getElementById('ocopy').style.display='none';
+  busy('obtn','ospin','olbl','Working…');
 
-  setTimeout(() => {
-    const code = document.getElementById('inputCode').value || '';
-    const result = appendIdentifier(applyObfuscation(code));
-    out.textContent = result;
-    out.classList.remove('dim');
-    document.getElementById('obfDot').classList.add('green');
-    document.getElementById('obfDl').disabled = false;
-    document.getElementById('obfCopy').style.display = 'block';
-    setIdle('obfBtn','obfSpin','obfLbl','⚡ Obfuscate');
-  }, 420);
+  setTimeout(()=>{
+    try{
+      const result=obfuscate(code);
+      box.textContent=result;
+      box.classList.remove('dim');
+      document.getElementById('odot').className='dot g';
+      document.getElementById('odl').disabled=false;
+      document.getElementById('ocopy').style.display='inline-block';
+    }catch(e){
+      box.textContent='-- Error: '+e.message;
+      box.classList.add('err');
+      box.classList.remove('dim');
+    }
+    idle('obtn','ospin','olbl','⚡ Obfuscate');
+  },300);
 }
 
-function clearObf() {
-  document.getElementById('inputCode').value = '';
-  document.getElementById('obfOut').textContent = '';
-  document.getElementById('obfDot').classList.remove('green');
-  document.getElementById('obfDl').disabled = true;
-  document.getElementById('obfCopy').style.display = 'none';
+function clearObf(){
+  document.getElementById('icode').value='';
+  document.getElementById('obox').textContent='';
+  document.getElementById('obox').className='outbox';
+  document.getElementById('odot').className='dot';
+  document.getElementById('odl').disabled=true;
+  document.getElementById('ocopy').style.display='none';
 }
 
-// ═══════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 //  DEOBFUSCATOR UI
-// ═══════════════════════════════════════════
-function doDeobfuscate() {
-  const input = document.getElementById('deobIn').value || '';
-  const out = document.getElementById('deobOut');
+// ══════════════════════════════════════════════════════
+function doDeobf(){
+  const code=document.getElementById('dicode').value||'';
+  if(!code.trim())return;
+  const box=document.getElementById('dobox');
+  box.classList.add('dim'); box.classList.remove('err');
+  document.getElementById('ddot').className='dot';
+  document.getElementById('ddl').disabled=true;
+  document.getElementById('dcopy').style.display='none';
+  busy('dbtn','dspin','dlbl','Analysing…');
 
-  if (!/--\[\[\s*Identifier:\s*[A-Za-z0-9]{20,}\s*\]\]/.test(input)) {
-    out.textContent = '-- ✗  No LuaShield identifier found.\n-- This tool only works on code obfuscated by LuaShield.';
-    return;
+  setTimeout(()=>{
+    try{
+      const result=deobfuscate(code);
+      box.textContent=result;
+      box.classList.remove('dim');
+      document.getElementById('ddot').className='dot o';
+      document.getElementById('ddl').disabled=false;
+      document.getElementById('dcopy').style.display='inline-block';
+    }catch(e){
+      box.textContent='-- Error: '+e.message;
+      box.classList.add('err');
+      box.classList.remove('dim');
+    }
+    idle('dbtn','dspin','dlbl','🔍 Deobfuscate');
+  },300);
+}
+
+function clearDeobf(){
+  document.getElementById('dicode').value='';
+  document.getElementById('dobox').textContent='';
+  document.getElementById('dobox').className='outbox oo';
+  document.getElementById('ddot').className='dot';
+  document.getElementById('ddl').disabled=true;
+  document.getElementById('dcopy').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+//
+//   OBFUSCATION ENGINE v3
+//
+//   Strategy: encode the entire source into a Lua script
+//   that decodes and executes itself at runtime.
+//
+//   Pipeline:
+//   1. Strip comments, minify whitespace → clean single-line source
+//   2. XOR-encrypt every byte with a random key
+//   3. Base91-encode the encrypted bytes
+//   4. Build a Lua loader that:
+//        a. Decodes Base91 → bytes
+//        b. XOR-decrypts → clean source string
+//        c. Calls load(source)() to execute
+//   5. Minify the loader itself to a single line
+//   6. Append --[[LS:<meta>]] signature on line 2
+//
+//   Deobfuscation is exact inverse:
+//   1. Verify LS signature
+//   2. Extract payload + key from signature
+//   3. Base91-decode → XOR-decrypt → original source
+//
+// ══════════════════════════════════════════════════════
+
+// ── Base91 ──
+// Uses a Lua-safe alphabet (no quotes, no backslash, no control chars)
+const B91_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_{|}~`';
+
+function b91Encode(bytes) {
+  let v = 0, b = 0, o = '';
+  for (let i = 0; i < bytes.length; i++) {
+    v |= bytes[i] << b;
+    b += 8;
+    if (b > 13) {
+      let x = v & 8191;
+      if (x > 88) { v >>= 13; b -= 13; } else { x = v & 16383; v >>= 14; b -= 14; }
+      o += B91_ALPHA[x % 91] + B91_ALPHA[(x / 91) | 0];
+    }
   }
-
-  setBusy('deobBtn','deobSpin','deobLbl','Analysing…');
-  out.classList.add('dim');
-  document.getElementById('deobDot').classList.remove('orange');
-  document.getElementById('deobDl').disabled = true;
-  document.getElementById('deobCopy').style.display = 'none';
-
-  setTimeout(() => {
-    out.textContent = applyDeobfuscation(input);
-    out.classList.remove('dim');
-    document.getElementById('deobDot').classList.add('orange');
-    document.getElementById('deobDl').disabled = false;
-    document.getElementById('deobCopy').style.display = 'block';
-    setIdle('deobBtn','deobSpin','deobLbl','🔍 Deobfuscate');
-  }, 480);
-}
-
-function clearDeob() {
-  document.getElementById('deobIn').value = '';
-  document.getElementById('deobOut').textContent = '';
-  document.getElementById('deobDot').classList.remove('orange');
-  document.getElementById('deobDl').disabled = true;
-  document.getElementById('deobCopy').style.display = 'none';
-}
-
-function setBusy(b,s,l,txt) {
-  document.getElementById(b).disabled = true;
-  document.getElementById(s).style.display = 'block';
-  document.getElementById(l).textContent = txt;
-}
-function setIdle(b,s,l,txt) {
-  document.getElementById(b).disabled = false;
-  document.getElementById(s).style.display = 'none';
-  document.getElementById(l).textContent = txt;
-}
-
-// ═══════════════════════════════════════════
-//  DEOBFUSCATION ENGINE
-// ═══════════════════════════════════════════
-function applyDeobfuscation(code) {
-  let r = String(code);
-
-  // 1. Strip identifier comment
-  r = r.replace(/\n*--\[\[\s*Identifier:\s*[A-Za-z0-9]+\s*\]\]/g, '');
-
-  // 2. Reverse string.char(N,N,...) → "string"
-  r = r.replace(/string\.char\(([\d,\s]+)\)/g, (_, args) => {
-    try {
-      const nums = args.split(',').map(n => parseInt(n.trim(), 10));
-      if (nums.some(isNaN)) return _;
-      const str = nums.map(n => String.fromCharCode(n)).join('');
-      return '"' + str.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"';
-    } catch { return _; }
-  });
-
-  // 3. Reverse boolean obfuscation
-  r = r.replace(/\(1==1\)/g, 'true').replace(/\(1==0\)/g, 'false');
-
-  // 4. Reverse number wrappers  (N + 0)  and  (N+K-K)
-  r = r.replace(/\((\d+(?:\.\d+)?)\s*\+\s*0\)/g, '$1');
-  r = r.replace(/\((\d+(?:\.\d+)?)\s*\+\s*(\d+)\s*-\s*\2\)/g, '$1');
-
-  // 5. Strip junk do..end blocks from advancedControlFlowObfuscation
-  r = r.replace(/do\s+local\s+_vx[0-9a-f]+=\s*0\s*;\s*local\s+_vx[0-9a-f]+=\s*1\s*;\s*if\s+_vx[0-9a-f]+\s*<\s*_vx[0-9a-f]+\s*then[\s\S]*?end\s+end\n?/g, '');
-
-  // 6. Strip "; if true then end" junk (basicControlFlow)
-  r = r.replace(/;\s*if\s*true\s*then\s*end/g, ';');
-
-  // 7. Rename _vxABCDEF... → readable placeholders sequentially
-  const seen = new Map(); let ctr = 1;
-  r = r.replace(/_vx[0-9a-f]{6,}/g, name => {
-    if (!seen.has(name)) seen.set(name, `_v${ctr++}`);
-    return seen.get(name);
-  });
-
-  // 8. Basic pretty-print: expand semicolons & keywords to newlines
-  r = r
-    .replace(/;\s*/g, ';\n')
-    .replace(/\bthen\b\s*/g, 'then\n')
-    .replace(/\bdo\b\s*/g, 'do\n')
-    .replace(/\bend\b/g, 'end\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  return r + '\n\n-- Deobfuscated by LuaShield Reveal';
-}
-
-// ═══════════════════════════════════════════
-//  OBFUSCATION ENGINE
-// ═══════════════════════════════════════════
-const PRESERVE = true;
-
-function applyObfuscation(code) {
-  let o = String(code || '');
-  if (!o.trim()) return o;
-  o = rmBlockComments(o);
-  o = rmLineComments(o);
-  o = minifyWS(o);
-  [strToChar, advCF, c=>deadCode(c,PRESERVE), localRename,
-   boolObf, numObf, dataObf, fnInline].forEach(fn => o = fn(o));
-  [advCF, dataObf, fnInline, c=>junkCode(c,PRESERVE)].forEach(fn => o = fn(o));
+  if (b) {
+    o += B91_ALPHA[v % 91];
+    if (b > 7 || v > 90) o += B91_ALPHA[(v / 91) | 0];
+  }
   return o;
 }
 
-function mos(code, fn) { // map outside strings
-  let out='', i=0, len=code.length;
-  while (i<len) {
-    const ch=code[i];
-    if (ch==='"'||ch==="'") {
-      const q=ch; out+=ch; i++;
-      while(i<len){ const cc=code[i]; out+=cc; i++;
-        if(cc==='\\'){if(i<len){out+=code[i];i++;} continue;}
-        if(cc===q) break;
+function b91Decode(str) {
+  const bytes = [];
+  let v = -1, b = 0, x = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = B91_ALPHA.indexOf(str[i]);
+    if (c < 0) continue;
+    if (v < 0) { v = c; continue; }
+    v += c * 91;
+    x |= v << b;
+    b += (v & 8191) > 88 ? 13 : 14;
+    v = (v >> 13) | 0; // keep remainder (but for deobf we reset)
+    // actually standard base91:
+    do { bytes.push(x & 255); x >>= 8; b -= 8; } while (b > 7);
+    v = -1;
+  }
+  if (v > -1) bytes.push((x | v << b) & 255);
+  return bytes;
+}
+
+// ── XOR ──
+function xorBytes(bytes, key) {
+  const k = typeof key === 'number' ? [key & 255, (key >> 8) & 255, (key >> 16) & 255] : key;
+  return bytes.map((b, i) => b ^ k[i % k.length]);
+}
+
+// ── String to UTF-8 bytes ──
+function strToBytes(s) {
+  const bytes = [];
+  for (let i = 0; i < s.length; i++) {
+    let c = s.charCodeAt(i);
+    if (c < 128) bytes.push(c);
+    else if (c < 2048) { bytes.push(192|(c>>6)); bytes.push(128|(c&63)); }
+    else { bytes.push(224|(c>>12)); bytes.push(128|((c>>6)&63)); bytes.push(128|(c&63)); }
+  }
+  return bytes;
+}
+
+function bytesToStr(bytes) {
+  let s = '', i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i++];
+    if (b < 128) s += String.fromCharCode(b);
+    else if (b < 224) s += String.fromCharCode(((b&31)<<6)|(bytes[i++]&63));
+    else s += String.fromCharCode(((b&15)<<12)|((bytes[i++]&63)<<6)|(bytes[i++]&63));
+  }
+  return s;
+}
+
+// ── Minifier: remove comments + collapse whitespace but keep Lua valid ──
+function minifyLua(src) {
+  // Remove block comments
+  src = src.replace(/--\[\[[\s\S]*?\]\]/g, ' ');
+  // Remove line comments (carefully — not inside strings)
+  src = processOutsideStrings(src, chunk => chunk.replace(/--[^\n]*/g, ''));
+  // Collapse all whitespace (newlines, tabs, multiple spaces) to single space
+  src = processOutsideStrings(src, chunk => chunk.replace(/\s+/g, ' '));
+  // Remove space around operators/punctuation where safe
+  src = processOutsideStrings(src, chunk =>
+    chunk
+      .replace(/ *(==|~=|<=|>=|\.\.|\.\.\.|and |or |not ) */g, m => m.trim()+' ')
+      .replace(/ *([=+\-*\/%^#<>(){}\[\];:,]) */g, '$1')
+  );
+  // Fix required spaces: keywords must have space before next word char
+  src = processOutsideStrings(src, chunk =>
+    chunk
+      .replace(/\b(local|function|if|then|else|elseif|end|do|while|repeat|until|for|in|return|break|not|and|or)([A-Za-z0-9_])/g, '$1 $2')
+      .replace(/([A-Za-z0-9_])(local|function|then|else|elseif|end|do|while|repeat|until|return|break)\b/g, '$1 $2')
+  );
+  return src.trim();
+}
+
+// Process text outside Lua string literals
+function processOutsideStrings(src, fn) {
+  let out = '', i = 0;
+  while (i < src.length) {
+    // Long strings [[ ... ]]
+    if (src[i]==='[' && (src[i+1]==='[' || src[i+1]==='=')) {
+      let eq=''; let j=i+1;
+      while(src[j]==='=') {eq+=src[j++];}
+      if(src[j]==='['){
+        const close=']]'.slice(0,1)+eq+']';
+        const end=src.indexOf(close,j+1);
+        if(end>=0){out+=src.slice(i,end+close.length);i=end+close.length;continue;}
       }
+    }
+    // Short strings
+    if (src[i]==='"' || src[i]==="'") {
+      const q=src[i]; let s=q; i++;
+      while(i<src.length){
+        if(src[i]==='\\'){s+=src[i]+src[i+1];i+=2;continue;}
+        s+=src[i];
+        if(src[i]===q){i++;break;}
+        i++;
+      }
+      out+=s;
     } else {
-      let j=i; while(j<len&&code[j]!=='"'&&code[j]!=="'") j++;
-      out+=fn(code.slice(i,j)); i=j;
+      // collect non-string chunk
+      let j=i;
+      while(j<src.length && src[j]!=='"' && src[j]!=="'" && !(src[j]==='[' && (src[j+1]==='['||src[j+1]==='='))) j++;
+      out+=fn(src.slice(i,j));
+      i=j;
     }
   }
   return out;
 }
 
-function rmBlockComments(c){return mos(c,s=>s.replace(/--\[\[[\s\S]*?\]\]/g,''));}
-function rmLineComments(c){return mos(c,s=>s.replace(/--[^\n\r]*/g,''));}
-function minifyWS(code){
-  return mos(code,o=>{
-    let s=o.replace(/\s+/g,' ');
-    s=s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g,'$1');
-    s=s.replace(/\blocal([A-Za-z_])/g,'local $1');
-    s=s.replace(/\bfunction([ (])/g,'function $1');
-    s=s.replace(/\bend([^\w])/g,'end$1');
-    return s.trim();
-  });
+// ── Generate random key (3 bytes) ──
+function randKey() {
+  return [
+    Math.floor(Math.random()*254)+1,
+    Math.floor(Math.random()*254)+1,
+    Math.floor(Math.random()*254)+1
+  ];
 }
-function strToChar(code){
-  return mos(code,o=>o.replace(/(["'])([^\1\\]{1,120}?)\1/g,(m,q,inner)=>{
-    if(/[\\\r\n]/.test(inner)) return m;
-    if(!inner.length) return q+q;
-    return `string.char(${[...inner].map(c=>c.charCodeAt(0)).join(',')})`;
-  }));
+
+// ── Build the Lua decoder (itself minified to one line) ──
+// The decoder is a self-contained Lua snippet that:
+//   1. Has the B91 alphabet and encoded payload hardcoded
+//   2. Decodes → XORs → load()s the result
+function buildLuaLoader(encoded, key) {
+  const k0=key[0], k1=key[1], k2=key[2];
+  const alpha = B91_ALPHA.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+  // Lua source for the decoder (will itself be minified)
+  const loaderSrc = `
+local _a='${alpha}'
+local _d='${encoded}'
+local _k={${k0},${k1},${k2}}
+local _t={}
+local _v=-1
+local _b=0
+local _x=0
+for _i=1,#_d do
+  local _c=_a:find(_d:sub(_i,_i),1,true)
+  if _c then
+    _c=_c-1
+    if _v<0 then
+      _v=_c
+    else
+      _v=_v+_c*91
+      _x=_x|(_v<<_b)
+      if(_v&8191)>88 then _b=_b+13 else _b=_b+14 end
+      _v=math.floor(_v/8192)
+      repeat
+        table.insert(_t,_x&255)
+        _x=_x>>8
+        _b=_b-8
+      until _b<=7
+      _v=-1
+    end
+  end
+end
+if _v>-1 then table.insert(_t,(_x|(_v<<_b))&255) end
+local _s={}
+local _i=1
+while _i<=#_t do
+  local _byte=_t[_i]
+  local _ki=_k[((_i-1)%3)+1]
+  local _dec=_byte~_ki
+  if _dec<128 then
+    table.insert(_s,string.char(_dec))
+    _i=_i+1
+  elseif _dec<224 then
+    local _b2=_t[_i+1]~_k[((_i)%3)+1]
+    table.insert(_s,string.char(((_dec&31)<<6)|(_b2&63)))
+    _i=_i+2
+  else
+    local _b2=_t[_i+1]~_k[((_i)%3)+1]
+    local _b3=_t[_i+2]~_k[((_i+1)%3)+1]
+    table.insert(_s,string.char(((_dec&15)<<12)|((_b2&63)<<6)|(_b3&63)))
+    _i=_i+3
+  end
+end
+local _src=table.concat(_s)
+local _f,_e=load(_src)
+if _f then _f() else error(_e) end
+`;
+
+  return minifyLua(loaderSrc.trim());
 }
-function advCF(code){
-  const a=gn(),b=gn();
-  return `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n`+code;
+
+// ── Main obfuscate function ──
+function obfuscate(src) {
+  // 1. Minify source
+  const clean = minifyLua(src);
+  if (!clean) throw new Error('Empty input after minification');
+
+  // 2. Encrypt
+  const key = randKey();
+  const bytes = strToBytes(clean);
+  const encrypted = xorBytes(bytes, key);
+
+  // 3. Encode
+  const encoded = b91Encode(encrypted);
+
+  // 4. Build loader (already a single line from minifyLua)
+  const loader = buildLuaLoader(encoded, key);
+
+  // 5. Build signature for deobfuscator
+  // Store: key hex + '|' + encoded payload
+  const keyHex = key.map(k=>k.toString(16).padStart(2,'0')).join('');
+  const sig = keyHex + '|' + encoded;
+
+  // 6. Return: loader on line 1, signature comment on line 2
+  return loader + '\n--[[LS:' + sig + ']]';
 }
-function deadCode(code,pf){if(pf) return code; const f=gn(),v=gn(); return `local function ${f}() local ${v}=${Math.floor(Math.random()*999)}; return ${v}; end\n`+code;}
-function junkCode(code,pf){if(pf) return code; const opts=[`local ${gn()}=1`,`local ${gn()}=string.char(72,101,108)`,`if(1==1)then end`]; return opts[Math.floor(Math.random()*opts.length)]+'\n'+code;}
-function localRename(code){
-  const safe=new Set(['game','workspace','script','instance','Instance','require','task','wait','print','warn','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof']);
-  const rep=Object.create(null);
-  const rx=/\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g; let m;
-  while((m=rx.exec(code))) if(!safe.has(m[1])&&!rep[m[1]]) rep[m[1]]=gn();
-  if(!Object.keys(rep).length) return code;
-  return mos(code,chunk=>{for(const o in rep) chunk=chunk.replace(new RegExp(`\\b${o}\\b`,'g'),rep[o]); return chunk;});
-}
-function fnInline(code){
-  const rx=/local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
-  const decls=[]; let m;
-  while((m=rx.exec(code))){
-    const body=m[2].trim(), sr=body.match(/^\s*return\s+([\s\S]+?)\s*$/);
-    if(sr){const e=sr[1].trim(); if(!/[^0-9+\-*/().\s'"\[\],]/.test(e)||/true|false|nil/.test(e)) decls.push({name:m[1],expr:e,full:m[0]});}
+
+// ── Main deobfuscate function ──
+function deobfuscate(src) {
+  // 1. Find signature
+  const sigMatch = src.match(/--\[\[LS:([0-9a-f]{6})\|([^\]]+)\]\]/);
+  if (!sigMatch) {
+    throw new Error('No LuaShield signature found.\nThis tool only works on code obfuscated by LuaShield v3+.\nMake sure you paste the full output including the --[[LS:...]] line.');
   }
-  if(!decls.length) return code;
-  let out=mos(code,chunk=>{for(const d of decls) chunk=chunk.replace(new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`,'g'),`(${d.expr})`); return chunk;});
-  for(const d of decls) out=out.replace(d.full,'');
-  return out;
+
+  const keyHex = sigMatch[1];
+  const encoded = sigMatch[2];
+
+  // 2. Parse key
+  const key = [
+    parseInt(keyHex.slice(0,2),16),
+    parseInt(keyHex.slice(2,4),16),
+    parseInt(keyHex.slice(4,6),16)
+  ];
+
+  // 3. Decode
+  const encrypted = b91Decode(encoded);
+  if (!encrypted.length) throw new Error('Payload decode failed — corrupted data.');
+
+  // 4. Decrypt
+  const decrypted = xorBytes(encrypted, key);
+
+  // 5. Convert bytes to string
+  const recovered = bytesToStr(decrypted);
+  if (!recovered.trim()) throw new Error('Decryption produced empty result — key mismatch?');
+
+  // 6. Pretty-print (basic re-indentation)
+  const pretty = prettyPrint(recovered);
+
+  return pretty + '\n\n-- Deobfuscated by LuaShield Reveal';
 }
-function boolObf(code){return mos(code,o=>o.replace(/\btrue\b/g,'(1==1)').replace(/\bfalse\b/g,'(1==0)'));}
-function numObf(code){return mos(code,o=>o.replace(/\b(\d+(\.\d+)?)\b/g,(m,n)=>Math.random()<0.35?`(${n} + 0)`:n));}
-function dataObf(code){
-  return mos(code,o=>{
-    const off=Math.floor(Math.random()*50)+1;
-    return o.replace(/\b(\d+(\.\d+)?)\b/g,(m,n)=>Math.random()<0.25?`(${n}+${off}-${off})`:n);
+
+// ── Basic pretty-printer ──
+// Re-indents minified Lua by tracking block depth
+function prettyPrint(src) {
+  // First split into logical tokens / lines by inserting newlines at block boundaries
+  let out = src;
+
+  // Add newlines after: then, do, else, repeat  (when followed by non-whitespace)
+  out = out.replace(/\b(then|do|else|repeat)\b\s*/g, '$1\n');
+  // Add newlines before: end, else, elseif, until
+  out = out.replace(/\s*\b(end|else|elseif|until)\b/g, '\n$1');
+  // Add newlines after: end, else, until  
+  out = out.replace(/\b(end|else|until)\b\s*/g, '$1\n');
+  // Add newlines after semicolons
+  out = out.replace(/;\s*/g, '\n');
+  // Add newlines before function declarations
+  out = out.replace(/\s*(local function|function)\s+/g, '\n$1 ');
+  // Collapse multiple blank lines
+  out = out.replace(/\n{3,}/g, '\n\n');
+
+  // Now indent based on block depth
+  const lines = out.split('\n');
+  let depth = 0;
+  const indented = lines.map(raw => {
+    const line = raw.trim();
+    if (!line) return '';
+
+    // Decrease indent for closing keywords
+    if (/^(end|else|elseif|until)\b/.test(line)) depth = Math.max(0, depth - 1);
+
+    const result = '  '.repeat(depth) + line;
+
+    // Increase indent after opening keywords
+    if (/\b(then|do|else|repeat)\s*$/.test(line)) depth++;
+    if (/^(local )?function\b/.test(line)) depth++;
+    // end on same line as function body shouldn't increase
+    if (/\bend\b/.test(line) && !/^end/.test(line)) {/* inline end, no change */}
+
+    return result;
   });
+
+  return indented.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
-function appendIdentifier(code){return String(code||'')+'\n\n--[[ Identifier: '+genId(64)+' ]]';}
-function genId(len=48){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; let o=''; for(let i=0;i<len;i++) o+=c[Math.floor(Math.random()*c.length)]; return o;}
-function gn(){return `_vx${Math.floor(Math.random()*0xFFFFFF).toString(16)}${Math.floor(Math.random()*0xFFFFFF).toString(16)}`;}
+
 </script>
 </body>
 </html>
