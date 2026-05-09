@@ -3,604 +3,570 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lua Obfuscator | v2.04.3</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<title>LuaShield</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-    body {
-        font-family: 'Source Code Pro', monospace;
-        margin: 0;
-        background: #000;
-        color: #eee;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        overflow-x: hidden;
-    }
+  :root {
+    --bg:        #07080a;
+    --surface:   #0e1015;
+    --surface2:  #13161c;
+    --border:    #1e2330;
+    --accent:    #5dffb4;
+    --accent2:   #00c97a;
+    --text:      #d4dce8;
+    --muted:     #4a5568;
+    --danger:    #ff4d6d;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
 
-    .container {
-        display: none;
-        flex-direction: column;
-        width: 85%;
-        max-width: 900px;
-        padding: 40px;
-        border-radius: 12px;
-        background: #111;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-    }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    h1 {
-        text-align: center;
-        color: #e74c3c;
-        font-size: 2.5em;
-        margin-bottom: 30px;
-    }
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
 
-    .code-area-container {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
+  /* ── grid bg ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(93,255,180,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(93,255,180,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-    .code-area h2 {
-        color: #e86353;
-        margin-bottom: 8px;
-        font-weight: 500;
-    }
+  /* ── intro ── */
+  #intro {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: introOut 0.6s ease 2.6s forwards;
+  }
 
-    textarea, #output {
-        width: 100%;
-        height: 250px;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #555;
-        background: #222;
-        color: #eee;
-        font-family: inherit;
-        resize: none;
-        overflow: auto;
-        transition: border-color 0.3s, box-shadow 0.3s;
-    }
+  .intro-logo {
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: #fff;
+    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+  }
+  .intro-logo span { color: var(--accent); }
 
-    textarea:focus, #output:focus {
-        border-color: #e74c3c;
-        box-shadow: 0 0 0 0.2rem rgba(231,76,60,0.25);
-        outline: none;
-    }
+  .intro-bar {
+    margin-top: 32px;
+    width: 200px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both;
+  }
+  .intro-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    animation: barFill 2s ease 0.7s forwards;
+    width: 0;
+  }
 
-    .controls {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 20px;
-    }
+  .intro-sub {
+    margin-top: 14px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.7s both;
+  }
 
-    .button-group, .dropdown {
-        display: flex;
-        gap: 10px;
-    }
+  @keyframes logoIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+  @keyframes barFill { to { width: 100%; } }
+  @keyframes introOut { to { opacity:0; pointer-events:none; } }
 
-    button, .dropdown button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        font-size: 1em;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        background-color: #c0392b;
-        color: #fff;
-        transition: 0.3s;
-    }
+  /* ── layout ── */
+  .shell {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 1080px;
+    width: 92%;
+    margin: 0 auto;
+    padding: 48px 0 80px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 3s forwards;
+  }
+  @keyframes fadeUp { to { opacity:1; } }
 
-    button:hover, .dropdown:hover button {
-        background-color: #d64537;
-        transform: translateY(-1px);
-    }
+  /* ── header ── */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-    #clearButton { background: #333; }
-    #clearButton:hover { background: #444; }
+  .logo-text {
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+    line-height: 1;
+  }
+  .logo-text span { color: var(--accent); }
 
-    #loadingIndicator { display: none; margin-left: 15px; animation: spin 0.8s linear infinite; }
+  .badge-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .badge {
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .badge.active {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: rgba(93,255,180,0.06);
+  }
 
-    .dropdown { position: relative; }
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        background: #222;
-        min-width: 160px;
-        border-radius: 6px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        overflow: hidden;
-        z-index: 3;
-    }
+  /* ── panels ── */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media(max-width:700px) { .panels { grid-template-columns: 1fr; } }
 
-    .dropdown-content a {
-        color: #eee;
-        padding: 10px 14px;
-        text-decoration: none;
-        display: block;
-    }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
 
-    .dropdown-content a:hover { background: #444; }
-    .dropdown:hover .dropdown-content { display: block; }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
 
-    #output { opacity: 1; transition: opacity 0.3s; }
-    #output.fade-out { opacity: 0; }
+  .panel-title {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 
-    #intro, #mini-menu {
-        position: fixed;
-        z-index: 10;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+  .panel-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .panel-dot.green { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
 
-    #intro {
-        top:0; left:0; width:100%; height:100%;
-        background:#000;
-        animation: fadeOut 1s ease 3s forwards;
-    }
+  textarea, #output {
+    flex: 1;
+    min-height: 320px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    resize: none;
+    outline: none;
+  }
 
-    #intro-title {
-        font-size: 4em;
-        font-weight: 700;
-        color:#e74c3c;
-        text-shadow:0 0 10px #e74c3c;
-        animation: flicker 0.5s infinite alternate, zoomIn 1.5s ease forwards;
-    }
+  textarea::placeholder { color: var(--muted); }
 
-    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
-    @keyframes flicker { from { opacity:0.8 } to { opacity:1 } }
-    @keyframes zoomIn { from { transform:scale(0) } to { transform:scale(1) } }
+  #output {
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--accent);
+    overflow: auto;
+    transition: opacity 0.2s;
+  }
+  #output.dim { opacity: 0.3; }
 
-    #mini-menu {
-        top: 20px; left: 20px;
-        background: rgba(34,34,34,0.9);
-        padding: 15px;
-        border-radius: 8px;
-        color: #eee;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        display: none;
-        animation: popUp 0.5s forwards, fadeOutSlow 1s ease 5s forwards;
-    }
+  /* ── action bar ── */
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
 
-    #mini-menu-title { font-weight: bold; margin-bottom: 5px; color: #e74c3c; }
-    #mini-menu p { margin:0 0 10px 0; font-size:0.9em; }
-    #mini-menu p:last-child { font-size:0.7em; color:#aaa; margin-bottom:0; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 28px;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
 
-    @keyframes popUp { from { transform:scale(0); opacity:0 } to { transform:scale(1); opacity:1 } }
-    @keyframes fadeOutSlow { to { opacity:0; visibility:hidden } }
+  .btn-primary {
+    background: var(--accent);
+    color: #07080a;
+  }
+  .btn-primary:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(93,255,180,0.25);
+  }
+  .btn-primary:active { transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-download {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+  .btn-download:hover {
+    background: rgba(93,255,180,0.08);
+    transform: translateY(-2px);
+  }
+  .btn-download:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* spinner */
+  .spin {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid #07080a;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── footer ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  footer a { color: var(--accent2); text-decoration: none; }
 </style>
 </head>
 <body>
 
-<div id="intro"><div id="intro-title">Lua Obfuscator | v.2.04.3</div></div>
-
-<div id="mini-menu">
-    <div id="mini-menu-title">Note!</div>
-    <p>Made By @vxpe_injected on Discord, Follow me for more</p>
-    <p>psst.. I've been working On this for ages</p>
+<!-- intro -->
+<div id="intro">
+  <div class="intro-logo">Lua<span>Shield</span></div>
+  <div class="intro-bar"><div class="intro-bar-fill"></div></div>
+  <div class="intro-sub">Extreme Obfuscation Engine</div>
 </div>
 
-<div class="container">
-    <h1><i class="fas fa-magic"></i>Lua Obfuscator</h1>
+<!-- app -->
+<div class="shell">
 
-    <div class="code-area-container">
-        <div class="code-area">
-            <h2><i class="fas fa-file-code"></i> Input</h2>
-            <textarea id="inputCode" placeholder="Paste your Lua code here..."></textarea>
-        </div>
-        <div class="code-area">
-            <h2><i class="fas fa-lock"></i> Output</h2>
-            <div id="output"></div>
-        </div>
+  <header>
+    <div class="logo-text">Lua<span>Shield</span></div>
+    <div class="badge-row">
+      <div class="badge active">Extreme Protection</div>
+      <div class="badge active">Anti-Reverse</div>
+      <div class="badge active">Preserve Functionality</div>
+    </div>
+  </header>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Input — Lua Source</span>
+        <div class="panel-dot"></div>
+      </div>
+      <textarea id="inputCode" placeholder="-- Paste your Lua code here...&#10;&#10;local function greet(name)&#10;  print('Hello, ' .. name)&#10;end&#10;greet('World')"></textarea>
     </div>
 
-    <div class="controls">
-        <div class="button-group">
-            <button id="obfuscateButton" onclick="obfuscateCode()"><i class="fas fa-shield-alt"></i> Obfuscate</button>
-            <button id="clearButton" onclick="clearFields()"><i class="fas fa-trash-alt"></i> Clear</button>
-            <button id="preserveFunctionalityButton" onclick="togglePreserveFunctionality()">
-                <i class="fas fa-check-circle"></i> Preserve Functionality: <span id="preserveStatus">OFF</span>
-            </button>
-        </div>
-
-        <div class="dropdown">
-            <button id="protectionLevelButton"><i class="fas fa-user-secret"></i> Protection Level</button>
-            <div class="dropdown-content">
-                <a href="#" onclick="setProtectionLevel('none')">None</a>
-                <a href="#" onclick="setProtectionLevel('low')">Low</a>
-                <a href="#" onclick="setProtectionLevel('normal')">Normal</a>
-                <a href="#" onclick="setProtectionLevel('advanced')">Advanced</a>
-                <a href="#" onclick="setProtectionLevel('extreme')">Extreme</a>
-            </div>
-        </div>
-
-        <div class="dropdown">
-            <button id="antiReverseEngineeringButton"><i class="fas fa-wrench"></i> Anti-Reverse Engineering</button>
-            <div class="dropdown-content">
-                <a href="#" onclick="setAntiReverseEngineering('none')">None</a>
-                <a href="#" onclick="setAntiReverseEngineering('basic')">Basic</a>
-                <a href="#" onclick="setAntiReverseEngineering('complex')">Complex</a>
-                <a href="#" onclick="setAntiReverseEngineering('extreme')">Extreme</a>
-            </div>
-        </div>
-
-        <span id="loadingIndicator"><i class="fas fa-spinner"></i></span>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Output — Obfuscated</span>
+        <div class="panel-dot" id="outputDot"></div>
+      </div>
+      <div id="output"></div>
     </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" id="obfBtn" onclick="obfuscateCode()">
+      <div class="spin" id="spinner"></div>
+      <span id="obfLabel">⚡ Obfuscate</span>
+    </button>
+    <button class="btn btn-ghost" onclick="clearFields()">Clear</button>
+    <button class="btn btn-download" id="dlBtn" onclick="downloadOutput()" disabled>↓ Download .lua</button>
+  </div>
+
 </div>
+
+<footer>
+  Made by <a href="#">@vxpe_injected</a> on Discord &nbsp;·&nbsp; LuaShield v2.04.3
+</footer>
 
 <script>
-/*
- Safe, fixed version of your obfuscator logic.
- - Fixes previous bugs: dangerous function inlining, overzealous whitespace removal, accidental renaming of Lua core identifiers.
- - Adds unique identifier appended as requested.
- - Still conservative so output runs correctly in Roblox (avoids breaking syntax).
-*/
-
-let protectionLevel = 'none';
-let antiReverseEngineering = 'none';
-let preserveFunctionality = false;
-
-document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-        const container = document.querySelector('.container');
-        if (container) container.style.display = 'flex';
-        const mini = document.getElementById('mini-menu');
-        if (mini) mini.style.display = 'block';
-    }, 4000);
-    updateButtonText();
-});
-
-function updateButtonText() {
-    const pBtn = document.getElementById('protectionLevelButton');
-    const aBtn = document.getElementById('antiReverseEngineeringButton');
-    if (pBtn) pBtn.innerHTML = `<i class="fas fa-user-secret"></i> ${capitalize(protectionLevel)} Protection`;
-    if (aBtn) aBtn.innerHTML = `<i class="fas fa-wrench"></i> ${capitalize(antiReverseEngineering)}`;
-}
-
-function capitalize(str) { return (str && str.length) ? str.charAt(0).toUpperCase() + str.slice(1) : str; }
-function setProtectionLevel(level) { protectionLevel = level; updateButtonText(); }
-function setAntiReverseEngineering(level) { antiReverseEngineering = level; updateButtonText(); }
-
-function togglePreserveFunctionality() {
-    preserveFunctionality = !preserveFunctionality;
-    const btn = document.getElementById('preserveFunctionalityButton');
-    const status = document.getElementById('preserveStatus');
-    if (status) status.textContent = preserveFunctionality ? 'ON' : 'OFF';
-    if (btn) {
-        btn.style.backgroundColor = preserveFunctionality ? '#2ecc71' : '#c0392b';
-        btn.innerHTML = `<i class="fas ${preserveFunctionality ? 'fa-check-circle' : 'fa-times-circle'}"></i> Preserve Functionality: <span id="preserveStatus">${preserveFunctionality ? 'ON' : 'OFF'}</span>`;
-    }
-}
+// Always-on settings
+const protectionLevel = 'extreme';
+const antiReverseEngineering = 'extreme';
+const preserveFunctionality = true;
 
 function obfuscateCode() {
-    const loading = document.getElementById('loadingIndicator');
-    const output = document.getElementById('output');
-    if (output) output.classList.add('fade-out');
-    if (loading) loading.style.display = 'inline-block';
+  const btn = document.getElementById('obfBtn');
+  const spinner = document.getElementById('spinner');
+  const label = document.getElementById('obfLabel');
+  const out = document.getElementById('output');
+  const dot = document.getElementById('outputDot');
+  const dlBtn = document.getElementById('dlBtn');
 
-    setTimeout(() => {
-        let code = (document.getElementById('inputCode') || {}).value || '';
-        let result = applyObfuscation(code, protectionLevel, antiReverseEngineering);
-        result = appendIdentifier(result); // Option B: append unique identifier block
-        if (output) {
-            // Use textContent so special characters are preserved
-            output.textContent = result;
-            output.classList.remove('fade-out');
-        }
-        if (loading) loading.style.display = 'none';
-    }, 250);
+  out.classList.add('dim');
+  spinner.style.display = 'block';
+  label.textContent = 'Working…';
+  btn.disabled = true;
+  dlBtn.disabled = true;
+  dot.classList.remove('green');
+
+  setTimeout(() => {
+    const code = document.getElementById('inputCode').value || '';
+    let result = applyObfuscation(code, protectionLevel, antiReverseEngineering);
+    result = appendIdentifier(result);
+
+    out.textContent = result;
+    out.classList.remove('dim');
+    spinner.style.display = 'none';
+    label.textContent = '⚡ Obfuscate';
+    btn.disabled = false;
+    dot.classList.add('green');
+    if (result.trim()) dlBtn.disabled = false;
+  }, 400);
 }
 
 function clearFields() {
-    const inEl = document.getElementById('inputCode');
-    const outEl = document.getElementById('output');
-    if (inEl) inEl.value = '';
-    if (outEl) outEl.textContent = '';
+  document.getElementById('inputCode').value = '';
+  document.getElementById('output').textContent = '';
+  document.getElementById('outputDot').classList.remove('green');
+  document.getElementById('dlBtn').disabled = true;
 }
 
-// ----------------------
-// Main obfuscation pipeline
-// ----------------------
+function downloadOutput() {
+  const text = document.getElementById('output').textContent;
+  if (!text.trim()) return;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'obfuscated.lua';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── obfuscation engine ──
+
 function applyObfuscation(code, level, antiReverse) {
-    let obf = String(code || '');
+  let obf = String(code || '');
+  if (!obf.trim()) return obf;
 
-    // Safety: if empty, return immediately (but still add identifier later)
-    if (!obf.trim()) return obf;
+  obf = removeBlockComments(obf);
+  obf = removeLineComments(obf);
+  obf = safeMinifyWhitespace(obf);
 
-    // Always do these safe, non-destructive steps only when user actually selected something
-    if (level !== 'none' || antiReverse !== 'none') {
-        obf = removeBlockComments(obf);
-        obf = removeLineComments(obf);
-        obf = safeMinifyWhitespace(obf);
-        // convertNumbersToHex left out by default because some numeric expressions can break Luau in odd edge cases
-    }
+  const pipeline = [stringToCharCalls, advancedControlFlowObfuscation,
+    (c) => deadCodeInsertion(c, preserveFunctionality), safeLocalRename,
+    booleanObfuscation, simpleNumberObfuscation, dataObfuscation, safeFunctionInlining];
 
-    const pipelineByLevel = {
-        low: [stringToCharCalls, basicControlFlowObfuscation],
-        normal: [stringToCharCalls, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename],
-        advanced: [stringToCharCalls, basicControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename, booleanObfuscation, simpleNumberObfuscation],
-        extreme: [stringToCharCalls, advancedControlFlowObfuscation, (c)=>deadCodeInsertion(c, preserveFunctionality), safeLocalRename, booleanObfuscation, simpleNumberObfuscation, dataObfuscation, safeFunctionInlining]
-    };
+  for (const fn of pipeline) obf = fn(obf);
 
-    if (pipelineByLevel[level]) {
-        for (const fn of pipelineByLevel[level]) {
-            obf = fn(obf);
-        }
-    }
+  const antiPipeline = [advancedControlFlowObfuscation, dataObfuscation,
+    safeFunctionInlining, (c) => junkCodeInsertion(c, preserveFunctionality)];
+  for (const fn of antiPipeline) obf = fn(obf);
 
-    const antiPipeline = {
-        basic: [basicControlFlowObfuscation],
-        complex: [advancedControlFlowObfuscation, dataObfuscation, safeFunctionInlining],
-        extreme: [advancedControlFlowObfuscation, dataObfuscation, safeFunctionInlining, (c)=>junkCodeInsertion(c,preserveFunctionality)]
-    };
-
-    if (antiPipeline[antiReverse]) {
-        for (const fn of antiPipeline[antiReverse]) obf = fn(obf);
-    }
-
-    return obf;
+  return obf;
 }
 
-// ----------------------
-// Safe helpers & techniques
-// ----------------------
-
-// Remove long block comments -- naive but adequate for most cases
-function removeBlockComments(code) {
-    // Avoid removing block-like text inside strings: quick approach - split by strings and only strip comments outside strings
-    return mapOutsideStrings(code, (outside) => outside.replace(/--\[\[[\s\S]*?\]\]/g, ''));
-}
-
-function removeLineComments(code) {
-    // remove line comments that are not inside strings
-    return mapOutsideStrings(code, (outside) => outside.replace(/--[^\n\r]*/g, ''));
-}
-
-// Map a function only over text outside string literals. Preserves strings exactly.
 function mapOutsideStrings(code, fn) {
-    let out = '';
-    let i = 0;
-    const len = code.length;
-    while (i < len) {
-        const ch = code[i];
-        if (ch === '"' || ch === "'") {
-            // capture string
-            const quote = ch;
-            out += ch;
-            i++;
-            while (i < len) {
-                const cc = code[i];
-                out += cc;
-                i++;
-                if (cc === '\\') {
-                    // escape next char without checking
-                    if (i < len) { out += code[i]; i++; }
-                    continue;
-                }
-                if (cc === quote) break;
-            }
-        } else {
-            // capture outside chunk until next quote
-            let j = i;
-            while (j < len && code[j] !== '"' && code[j] !== "'") j++;
-            const chunk = code.slice(i, j);
-            out += fn(chunk);
-            i = j;
-        }
+  let out = ''; let i = 0; const len = code.length;
+  while (i < len) {
+    const ch = code[i];
+    if (ch === '"' || ch === "'") {
+      const quote = ch; out += ch; i++;
+      while (i < len) {
+        const cc = code[i]; out += cc; i++;
+        if (cc === '\\') { if (i < len) { out += code[i]; i++; } continue; }
+        if (cc === quote) break;
+      }
+    } else {
+      let j = i;
+      while (j < len && code[j] !== '"' && code[j] !== "'") j++;
+      out += fn(code.slice(i, j)); i = j;
     }
-    return out;
+  }
+  return out;
 }
 
-// Minify safely: collapse multiple whitespace to single, remove spaces around punctuation but keep required spaces between identifiers/keywords
+function removeBlockComments(code) { return mapOutsideStrings(code, s => s.replace(/--\[\[[\s\S]*?\]\]/g, '')); }
+function removeLineComments(code) { return mapOutsideStrings(code, s => s.replace(/--[^\n\r]*/g, '')); }
+
 function safeMinifyWhitespace(code) {
-    // operate outside strings
-    return mapOutsideStrings(code, (outside) => {
-        // collapse runs of whitespace into single space
-        let s = outside.replace(/\s+/g, ' ');
-        // remove space before and after certain punctuation where safe
-        s = s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g, '$1');
-        // ensure 'localfunction' won't appear: restore required space between keywords "local" and following identifier or "function"
-        s = s.replace(/\blocal([A-Za-z_])/g, 'local $1');
-        s = s.replace(/\bfunction([ (])/g, 'function $1');
-        s = s.replace(/\bend([^\w])/g, 'end$1'); // keep end
-        return s.trim();
-    });
+  return mapOutsideStrings(code, outside => {
+    let s = outside.replace(/\s+/g, ' ');
+    s = s.replace(/\s*([=+\-*/%<>^(),;{}:\[\]])\s*/g, '$1');
+    s = s.replace(/\blocal([A-Za-z_])/g, 'local $1');
+    s = s.replace(/\bfunction([ (])/g, 'function $1');
+    s = s.replace(/\bend([^\w])/g, 'end$1');
+    return s.trim();
+  });
 }
 
-// Convert string literals to string.char(...) where appropriate (only for double/single quoted short strings)
 function stringToCharCalls(code) {
-    return mapOutsideStrings(code, (outside) => {
-        return outside.replace(/(["'])([^\1\\]{1,120}?)\1/g, (m, quote, inner) => {
-            // skip if contains unescaped quote or control characters or concatenation sequences
-            if (/[\\\r\n]/.test(inner)) return m;
-            // reasonable cutoff to keep very long strings untouched
-            if (inner.length === 0) return quote + quote;
-            // transform to string.char(...) but keep if contains non-ASCII? we'll still convert bytes
-            const codes = [...inner].map(ch => ch.charCodeAt(0)).join(',');
-            return `string.char(${codes})`;
-        });
-    });
+  return mapOutsideStrings(code, outside =>
+    outside.replace(/(["'])([^\1\\]{1,120}?)\1/g, (m, quote, inner) => {
+      if (/[\\\r\n]/.test(inner)) return m;
+      if (inner.length === 0) return quote + quote;
+      return `string.char(${[...inner].map(ch => ch.charCodeAt(0)).join(',')})`;
+    })
+  );
 }
 
-// Basic control-flow junk that is syntactically safe
 function basicControlFlowObfuscation(code) {
-    // insert benign if true then end after line endings semicolons/newlines where safe
-    return mapOutsideStrings(code, (outside) => {
-        // Insert after semicolons and after some statements separated by newline
-        return outside.replace(/;/g, '; if true then end');
-    });
+  return mapOutsideStrings(code, outside => outside.replace(/;/g, '; if true then end'));
 }
 
-// Advanced control-flow (wrap in a do..end block so it doesn't inject stray tokens)
 function advancedControlFlowObfuscation(code) {
-    const a = generateObfuscatedName();
-    const b = generateObfuscatedName();
-    const block = `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n`;
-    return block + code;
+  const a = genName(), b = genName();
+  return `do local ${a}=0; local ${b}=1; if ${a}<${b} then ${a}=${a}+1; ${b}=${b}+1; end end\n` + code;
 }
 
-// Dead code insertion: only add top-level harmless functions/constants
 function deadCodeInsertion(code, preserve) {
-    if (preserve) return code;
-    const f = generateObfuscatedName();
-    const v = generateObfuscatedName();
-    const dead = `local function ${f}() local ${v} = ${Math.floor(Math.random()*999)}; return ${v}; end\n`;
-    return dead + code;
+  if (preserve) return code;
+  const f = genName(), v = genName();
+  return `local function ${f}() local ${v} = ${Math.floor(Math.random()*999)}; return ${v}; end\n` + code;
 }
 
-// Junk insertion - single line placed at top
 function junkCodeInsertion(code, preserve) {
-    if (preserve) return code;
-    const stmts = [
-        `local ${generateObfuscatedName()} = 1`,
-        `local ${generateObfuscatedName()} = string.char(72,101,108)`,
-        `if (1==1) then end`
-    ];
-    const pick = stmts[Math.floor(Math.random() * stmts.length)];
-    return pick + '\n' + code;
+  if (preserve) return code;
+  const stmts = [`local ${genName()} = 1`, `local ${genName()} = string.char(72,101,108)`, `if (1==1) then end`];
+  return stmts[Math.floor(Math.random()*stmts.length)] + '\n' + code;
 }
 
-// Safe local-variable rename: rename only variables declared with "local <name> =" or "local <name>," or "local <name>;"
 function safeLocalRename(code) {
-    // Will not rename globals or standard APIs like game, workspace, script, require, wait, etc.
-    const protectedNames = new Set([
-        // common Roblox/Lua globals and APIs
-        'game','workspace','script','instance','Instance','require','task','wait','print','warn','workspace','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof'
-    ]);
-    // find local declarations with pattern: local name [,name]* [= ...]
-    // capture outside strings
-    let replacements = Object.create(null);
-    const outside = mapOutsideStrings(code, s => s); // get whole code but strings preserved
-    const localDeclRegex = /\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g;
-    let m;
-    while ((m = localDeclRegex.exec(outside))) {
-        const name = m[1];
-        if (protectedNames.has(name)) continue;
-        if (!replacements[name]) {
-            replacements[name] = generateObfuscatedName();
-        }
-    }
-    if (Object.keys(replacements).length === 0) return code;
-
-    // perform replacements outside strings only
-    return mapOutsideStrings(code, (chunk) => {
-        for (const orig in replacements) {
-            // use word-boundary replace
-            chunk = chunk.replace(new RegExp(`\\b${orig}\\b`, 'g'), replacements[orig]);
-        }
-        return chunk;
-    });
+  const safe = new Set(['game','workspace','script','instance','Instance','require','task','wait','print','warn','tick','os','math','string','table','pairs','ipairs','next','type','error','pcall','xpcall','typeof']);
+  let replacements = Object.create(null);
+  const localDeclRegex = /\blocal\s+([a-zA-Z_]\w*)(?=\s*[=,;]|\s*$)/g;
+  let m;
+  while ((m = localDeclRegex.exec(code))) {
+    const name = m[1];
+    if (!safe.has(name) && !replacements[name]) replacements[name] = genName();
+  }
+  if (!Object.keys(replacements).length) return code;
+  return mapOutsideStrings(code, chunk => {
+    for (const orig in replacements) chunk = chunk.replace(new RegExp(`\\b${orig}\\b`, 'g'), replacements[orig]);
+    return chunk;
+  });
 }
 
-// Safe function inlining - VERY conservative
-// Only handles functions declared exactly as: local function name() return <expr> end
-// with no parameters and a single return expression that contains only literals and arithmetic
 function safeFunctionInlining(code) {
-    // parse declarations
-    const declRegex = /local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
-    const decls = [];
-    let m;
-    while ((m = declRegex.exec(code))) {
-        const name = m[1];
-        const body = m[2].trim();
-        // check for single return like: return 1+2 or return "hi"
-        const singleReturn = body.match(/^\s*return\s+([\s\S]+?)\s*$/);
-        if (singleReturn) {
-            const expr = singleReturn[1].trim();
-            // basic safety: expression must not contain letters (no variables/functions) except true/false/nil
-            if (/[^0-9+\-*/().\s'"\[\],]/.test(expr) && !/true|false|nil/.test(expr)) {
-                // contains identifiers, skip
-                continue;
-            }
-            decls.push({ name, expr, fullMatch: m[0] });
-        }
+  const declRegex = /local\s+function\s+([A-Za-z_]\w*)\s*\(\s*\)\s*([\s\S]*?)\s*end\b/g;
+  const decls = []; let m;
+  while ((m = declRegex.exec(code))) {
+    const body = m[2].trim();
+    const sr = body.match(/^\s*return\s+([\s\S]+?)\s*$/);
+    if (sr) {
+      const expr = sr[1].trim();
+      if (!/[^0-9+\-*/().\s'"\[\],]/.test(expr) || /true|false|nil/.test(expr))
+        decls.push({ name: m[1], expr, fullMatch: m[0] });
     }
-
-    if (decls.length === 0) return code;
-
-    // Replace calls like name() with (expr) - but only outside strings
-    let out = mapOutsideStrings(code, (chunk) => {
-        for (const d of decls) {
-            const callRegex = new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`, 'g');
-            chunk = chunk.replace(callRegex, `(${d.expr})`);
-        }
-        return chunk;
-    });
-
-    // Finally remove the original safe function declarations
-    for (const d of decls) {
-        out = out.replace(d.fullMatch, '');
-    }
-
-    return out;
+  }
+  if (!decls.length) return code;
+  let out = mapOutsideStrings(code, chunk => {
+    for (const d of decls) chunk = chunk.replace(new RegExp(`\\b${d.name}\\s*\\(\\s*\\)`, 'g'), `(${d.expr})`);
+    return chunk;
+  });
+  for (const d of decls) out = out.replace(d.fullMatch, '');
+  return out;
 }
 
-// Convert booleans to expressions
 function booleanObfuscation(code) {
-    return mapOutsideStrings(code, outside => {
-        return outside.replace(/\btrue\b/g, '(1==1)').replace(/\bfalse\b/g, '(1==0)');
-    });
+  return mapOutsideStrings(code, o => o.replace(/\btrue\b/g, '(1==1)').replace(/\bfalse\b/g, '(1==0)'));
 }
 
-// Simple numeric obfuscation (keeps numbers intact but wraps them in arithmetic that evaluates same)
 function simpleNumberObfuscation(code) {
-    return mapOutsideStrings(code, outside => {
-        return outside.replace(/\b(\d+(\.\d+)?)\b/g, (m, num) => {
-            // don't touch index-like numbers inside [] (best-effort) - simple approach: wrap randomly
-            if (Math.random() < 0.35) {
-                return `(${num} + 0)`;
-            }
-            return num;
-        });
-    });
+  return mapOutsideStrings(code, o => o.replace(/\b(\d+(\.\d+)?)\b/g, (m, n) => Math.random() < 0.35 ? `(${n} + 0)` : n));
 }
 
 function dataObfuscation(code) {
-    return mapOutsideStrings(code, outside => {
-        const offset = Math.floor(Math.random() * 50) + 1;
-        return outside.replace(/\b(\d+(\.\d+)?)\b/g, (m, num) => {
-            if (Math.random() < 0.25) return `(${num}+${offset}-${offset})`;
-            return num;
-        });
-    });
+  return mapOutsideStrings(code, o => {
+    const off = Math.floor(Math.random()*50)+1;
+    return o.replace(/\b(\d+(\.\d+)?)\b/g, (m, n) => Math.random() < 0.25 ? `(${n}+${off}-${off})` : n);
+  });
 }
 
-// ----------------------
-// Utilities
-// ----------------------
-
-// Append unique identifier block at end (Option B)
 function appendIdentifier(code) {
-    const id = generateIdentifier(64); // long unique string
-    // Ensure there's a trailing newline so comment doesn't accidentally attach to code token
-    return String(code || '') + '\n\n--[[ Identifier: ' + id + ' ]]';
+  const id = generateId(64);
+  return String(code||'') + '\n\n--[[ Identifier: ' + id + ' ]]';
 }
 
-// generate alpha-numeric identifier of given length
-function generateIdentifier(len = 48) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let out = '';
-    for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
-    return out;
+function generateId(len=48) {
+  const ch = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let o = '';
+  for (let i=0; i<len; i++) o += ch.charAt(Math.floor(Math.random()*ch.length));
+  return o;
 }
 
-// generate obfuscated variable-like name (safe lua identifier)
-function generateObfuscatedName() {
-    // start with _vx then a random hex chunk
-    const a = Math.floor(Math.random() * 0xFFFFFF).toString(16);
-    const b = Math.floor(Math.random() * 0xFFFFFF).toString(16);
-    return `_vx${a}${b}`;
+function genName() {
+  return `_vx${Math.floor(Math.random()*0xFFFFFF).toString(16)}${Math.floor(Math.random()*0xFFFFFF).toString(16)}`;
 }
 </script>
 </body>
