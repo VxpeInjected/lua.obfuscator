@@ -59,16 +59,7 @@ body::after{
   pointer-events:none;z-index:999;
 }
 
-/* grid */
-body::before{
-  content:'';
-  position:fixed;inset:0;
-  background-image:
-    linear-gradient(rgba(57,255,143,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(57,255,143,0.03) 1px,transparent 1px);
-  background-size:48px 48px;
-  pointer-events:none;z-index:0;
-}
+
 
 /* ── INTRO ── */
 #intro{
@@ -319,19 +310,13 @@ footer a:hover{color:var(--green);}
 <div class="shell">
 
   <div class="tabbar" id="tabbar">
-    <button class="tab active" id="tab-obf" onclick="switchTab('obf')">⚡ Obfuscator</button>
+    <button class="tab active" id="tab-obf" onclick="switchTab('obf')">Obfuscator</button>
   </div>
 
   <!-- ═══ OBFUSCATOR ═══ -->
   <div class="page active" id="page-obf">
     <div class="ph">
       <div class="ph-title">Lua<span>Shield</span></div>
-      <div class="badges">
-        <span class="badge g">Extreme</span>
-        <span class="badge g">Anti-Reverse</span>
-        <span class="badge g">Single Line</span>
-        <span class="badge g">Reversible</span>
-      </div>
     </div>
 
     <div class="panels">
@@ -366,10 +351,10 @@ end"></textarea>
     <div class="actions">
       <button class="btn btn-g" id="obtn" onclick="doObf()">
         <div class="spin" id="ospin"></div>
-        <span id="olbl">⚡ Obfuscate</span>
+        <span id="olbl">Obfuscate</span>
       </button>
       <button class="btn btn-ghost" onclick="clearObf()">Clear</button>
-      <button class="btn btn-og" id="odl" onclick="dlFile('obox','obfuscated.lua')" disabled>↓ Download .lua</button>
+      <button class="btn btn-og" id="odl" onclick="dlFile('obox','obfuscated.lua')" disabled>Download .lua</button>
     </div>
   </div>
 
@@ -377,10 +362,6 @@ end"></textarea>
   <div class="page" id="page-deob">
     <div class="ph">
       <div class="ph-title deob">Lua<span>Reveal</span></div>
-      <div class="badges">
-        <span class="badge o">🔓 Dev Tool</span>
-        <span class="badge o">LuaShield-Aware</span>
-      </div>
     </div>
 
     <div class="notice">
@@ -413,10 +394,10 @@ end"></textarea>
     <div class="actions">
       <button class="btn btn-o" id="dbtn" onclick="doDeobf()">
         <div class="spin" id="dspin" style="border-color:#060709"></div>
-        <span id="dlbl">🔍 Deobfuscate</span>
+        <span id="dlbl">Deobfuscate</span>
       </button>
       <button class="btn btn-ghost" onclick="clearDeobf()">Clear</button>
-      <button class="btn btn-oo" id="ddl" onclick="dlFile('dobox','deobfuscated.lua')" disabled>↓ Download .lua</button>
+      <button class="btn btn-oo" id="ddl" onclick="dlFile('dobox','deobfuscated.lua')" disabled>Download .lua</button>
     </div>
   </div>
 
@@ -466,7 +447,7 @@ function unlock(){
   const bar=document.getElementById('tabbar');
   const btn=document.createElement('button');
   btn.className='tab deob-tab'; btn.id='tab-deob';
-  btn.textContent='🔓 Deobfuscator';
+  btn.textContent='Deobfuscator';
   btn.onclick=()=>switchTab('deob');
   bar.appendChild(btn);
   setTimeout(()=>switchTab('deob'),120);
@@ -535,7 +516,7 @@ function doObf(){
       box.classList.add('err');
       box.classList.remove('dim');
     }
-    idle('obtn','ospin','olbl','⚡ Obfuscate');
+    idle('obtn','ospin','olbl','Obfuscate');
   },300);
 }
 
@@ -574,7 +555,7 @@ function doDeobf(){
       box.classList.add('err');
       box.classList.remove('dim');
     }
-    idle('dbtn','dspin','dlbl','🔍 Deobfuscate');
+    idle('dbtn','dspin','dlbl','Deobfuscate');
   },300);
 }
 
