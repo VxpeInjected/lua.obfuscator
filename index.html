@@ -37,6 +37,11 @@
   --shadow-md: 0 4px 16px rgba(0,0,0,.4);
   --ring-green: 0 0 0 1px rgba(57,255,143,.35);
   --ring-orange: 0 0 0 1px rgba(255,154,60,.35);
+  --lua-kw:  #c586c0;
+  --lua-str: #ce9178;
+  --lua-com: #6a9955;
+  --lua-num: #b5cea8;
+  --lua-fn:  #dcdcaa;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -210,11 +215,29 @@ textarea::placeholder{color:var(--muted);}
 .outbox{
   white-space:pre-wrap;word-break:break-all;
   overflow:auto;transition:opacity .2s;
-  color:var(--green);
+  color:var(--text);
 }
 .outbox.dim{opacity:.15;}
-.outbox.oo{color:var(--orange);}
 .outbox.err{color:#ff5a72;}
+
+/* ── CODE HIGHLIGHT ── */
+.codewrap{position:relative;flex:1;display:flex;min-height:280px;}
+.hl-layer{
+  position:absolute;inset:0;margin:0;z-index:0;
+  padding:20px;
+  font-family:var(--mono);font-size:.78rem;line-height:1.8;
+  white-space:pre-wrap;word-break:break-all;
+  color:var(--text);overflow:auto;pointer-events:none;
+}
+.code-input{
+  position:relative;z-index:1;
+  color:transparent;caret-color:var(--text);
+}
+.lk{color:var(--lua-kw);}
+.ls{color:var(--lua-str);}
+.lc{color:var(--lua-com);font-style:italic;}
+.ln{color:var(--lua-num);}
+.lf{color:var(--lua-fn);}
 
 /* ── ACTIONS ── */
 .actions{
@@ -322,10 +345,12 @@ footer a:hover{color:var(--green);}
     <div class="panels">
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-label">Input — Lua Source</span>
+          <span class="panel-label">Input: Lua Source</span>
           <div class="dot" id="idot"></div>
         </div>
-        <textarea id="icode" spellcheck="false" placeholder="-- Paste your Lua code here...
+        <div class="codewrap">
+          <pre class="hl-layer" id="icode-hl" aria-hidden="true"></pre>
+          <textarea id="icode" class="code-input" spellcheck="false" placeholder="-- Paste your Lua code here...
 
 local function greet(name)
   print('Hello, ' .. name)
@@ -334,11 +359,12 @@ end
 for i = 1, 5 do
   greet('World')
 end"></textarea>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-label">Output — Obfuscated</span>
+          <span class="panel-label">Output: Obfuscated</span>
           <div class="panel-right">
             <button class="copybtn" id="ocopy" onclick="doCopy('obox','ocopy',false)" style="display:none">Copy</button>
             <div class="dot" id="odot"></div>
@@ -364,24 +390,22 @@ end"></textarea>
       <div class="ph-title deob">Lua<span>Reveal</span></div>
     </div>
 
-    <div class="notice">
-      <strong>LuaShield Deobfuscator</strong> — Only works on code obfuscated by this tool.
-      Verifies the <code>--[[LS:...]]</code> signature, then fully reverses the encoding back to clean Lua source.
-    </div>
-
     <div class="panels">
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-label">Input — Obfuscated Code</span>
+          <span class="panel-label">Input: Obfuscated Code</span>
           <div class="dot" id="didot"></div>
         </div>
-        <textarea id="dicode" spellcheck="false" placeholder="-- Paste LuaShield-obfuscated code here...
--- Must contain the --[[LS:...]] signature."></textarea>
+        <div class="codewrap">
+          <pre class="hl-layer" id="dicode-hl" aria-hidden="true"></pre>
+          <textarea id="dicode" class="code-input" spellcheck="false" placeholder="-- Paste LuaShield-obfuscated code here.
+-- Obfuscated code has to contain the --[[LS: ...]] signature."></textarea>
+        </div>
       </div>
 
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-label">Output — Deobfuscated</span>
+          <span class="panel-label">Output: Deobfuscated</span>
           <div class="panel-right">
             <button class="copybtn orange" id="dcopy" onclick="doCopy('dobox','dcopy',true)" style="display:none">Copy</button>
             <div class="dot" id="ddot"></div>
@@ -477,6 +501,46 @@ function dlFile(eid,fname){
 }
 
 // ══════════════════════════════════════════════════════
+//  LUA SYNTAX HIGHLIGHT
+// ══════════════════════════════════════════════════════
+const LUA_KEYWORDS = new Set(['and','break','do','else','elseif','end','false','for','function','goto','if','in','local','nil','not','or','repeat','return','then','true','until','while']);
+const LUA_BUILTINS = new Set(['print','pairs','ipairs','require','pcall','xpcall','error','assert','type','tostring','tonumber','setmetatable','getmetatable','rawget','rawset','rawequal','rawlen','select','next','unpack','string','table','math','os','io','coroutine','bit32','loadstring','load','getfenv','setfenv']);
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function highlightLua(src){
+  const re=/(?<bc>--\[(?<eq1>=*)\[[\s\S]*?\]\k<eq1>\])|(?<lc>--[^\n]*)|(?<lstr>\[(?<eq2>=*)\[[\s\S]*?\]\k<eq2>\])|(?<dq>"(?:\\.|[^"\\])*")|(?<sq>'(?:\\.|[^'\\])*')|(?<num>\b0[xX][0-9a-fA-F]+\b|\b\d+\.?\d*(?:[eE][+-]?\d+)?\b)|(?<id>\b[A-Za-z_][A-Za-z0-9_]*\b)/g;
+  let out='', last=0, m;
+  while((m=re.exec(src))){
+    out+=escHtml(src.slice(last,m.index));
+    const g=m.groups;
+    if(g.bc||g.lc) out+=`<span class="lc">${escHtml(m[0])}</span>`;
+    else if(g.lstr||g.dq||g.sq) out+=`<span class="ls">${escHtml(m[0])}</span>`;
+    else if(g.num) out+=`<span class="ln">${escHtml(m[0])}</span>`;
+    else if(g.id){
+      if(LUA_KEYWORDS.has(g.id)) out+=`<span class="lk">${g.id}</span>`;
+      else if(LUA_BUILTINS.has(g.id)) out+=`<span class="lf">${g.id}</span>`;
+      else out+=g.id;
+    }
+    last=re.lastIndex;
+  }
+  out+=escHtml(src.slice(last));
+  return out;
+}
+
+function wireHighlight(taId,hlId){
+  const ta=document.getElementById(taId), hl=document.getElementById(hlId);
+  const sync=()=>{ hl.innerHTML=highlightLua(ta.value)+'\n'; hl.scrollTop=ta.scrollTop; hl.scrollLeft=ta.scrollLeft; };
+  ta.addEventListener('input',sync);
+  ta.addEventListener('scroll',()=>{ hl.scrollTop=ta.scrollTop; hl.scrollLeft=ta.scrollLeft; });
+  sync();
+}
+wireHighlight('icode','icode-hl');
+wireHighlight('dicode','dicode-hl');
+
+// ══════════════════════════════════════════════════════
 //  UI HELPERS
 // ══════════════════════════════════════════════════════
 function busy(b,s,l,txt){
@@ -506,7 +570,7 @@ function doObf(){
   setTimeout(()=>{
     try{
       const result=obfuscate(code);
-      box.textContent=result;
+      box.innerHTML=highlightLua(result);
       box.classList.remove('dim');
       document.getElementById('odot').className='dot g';
       document.getElementById('odl').disabled=false;
@@ -522,7 +586,8 @@ function doObf(){
 
 function clearObf(){
   document.getElementById('icode').value='';
-  document.getElementById('obox').textContent='';
+  document.getElementById('icode-hl').innerHTML='';
+  document.getElementById('obox').innerHTML='';
   document.getElementById('obox').className='outbox';
   document.getElementById('odot').className='dot';
   document.getElementById('odl').disabled=true;
@@ -545,7 +610,7 @@ function doDeobf(){
   setTimeout(()=>{
     try{
       const result=deobfuscate(code);
-      box.textContent=result;
+      box.innerHTML=highlightLua(result);
       box.classList.remove('dim');
       document.getElementById('ddot').className='dot o';
       document.getElementById('ddl').disabled=false;
@@ -561,8 +626,9 @@ function doDeobf(){
 
 function clearDeobf(){
   document.getElementById('dicode').value='';
-  document.getElementById('dobox').textContent='';
-  document.getElementById('dobox').className='outbox oo';
+  document.getElementById('dicode-hl').innerHTML='';
+  document.getElementById('dobox').innerHTML='';
+  document.getElementById('dobox').className='outbox';
   document.getElementById('ddot').className='dot';
   document.getElementById('ddl').disabled=true;
   document.getElementById('dcopy').style.display='none';
@@ -699,7 +765,7 @@ end
 function minifyLua(src) {
   // Remove block comments
   src = src.replace(/--\[\[[\s\S]*?\]\]/g, ' ');
-  // Remove line comments (carefully — not inside strings)
+  // Remove line comments (carefully, not inside strings)
   src = processOutsideStrings(src, chunk => chunk.replace(/--[^\n]*/g, ''));
   // Collapse all whitespace (newlines, tabs, multiple spaces) to single space
   src = processOutsideStrings(src, chunk => chunk.replace(/\s+/g, ' '));
@@ -877,14 +943,14 @@ function deobfuscate(src) {
 
   // 3. Decode
   const encrypted = b91Decode(encoded);
-  if (!encrypted.length) throw new Error('Payload decode failed — corrupted data.');
+  if (!encrypted.length) throw new Error('Payload decode failed, corrupted data.');
 
   // 4. Decrypt
   const decrypted = xorBytes(encrypted, key);
 
   // 5. Convert bytes to string
   const recovered = bytesToStr(decrypted);
-  if (!recovered.trim()) throw new Error('Decryption produced empty result — key mismatch?');
+  if (!recovered.trim()) throw new Error('Decryption produced empty result, key mismatch?');
 
   // 6. Pretty-print (basic re-indentation)
   const pretty = prettyPrint(recovered);
